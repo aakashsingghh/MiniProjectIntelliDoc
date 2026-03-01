@@ -56,3 +56,28 @@ Document Upload → OCR → Text Processing → Entity Extraction → Classifica
 ---
 
 ## 📂 Project Structure
+
+---
+
+## 📅 Development Plan
+
+The project will be developed incrementally with daily commits including:
+
+- Project setup
+- File upload system
+- OCR integration
+- NLP entity extraction
+- ML classification
+- Workflow automation
+- Dashboard & deployment
+
+---
+
+## 👥 Team Members
+- Akash Singh
+- Anusha Kushwaha
+
+---
+
+## 📌 Current Status
+Day 1: Project initialized and repository created.
