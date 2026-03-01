@@ -1,4 +1,4 @@
-# MiniProjectIntelliDoc
+# Intelli-Doc
 # Intelligent Document Processing Platform (IDP)
 
 ## 📌 Project Overview
