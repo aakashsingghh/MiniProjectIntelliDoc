@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IDP - Upload Document</title>
+</head>
+<body>
+    <h2>Intelligent Document Processing Platform</h2>
+    <h3>Upload a Document</h3>
+
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="document" required>
+        <button type="submit">Upload</button>
+    </form>
+
+    {% if text %}
+<hr>
+<h3>Extracted Text:</h3>
+<pre style="text-align:left; white-space: pre-wrap;">{{ text }}</pre>
+{% endif %}
+
+</body>
+</html>
