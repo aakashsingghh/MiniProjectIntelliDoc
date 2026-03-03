@@ -82,4 +82,4 @@ The project will be developed incrementally with daily commits including:
 ## 📌 Current Status
 - Day 1: Project initialized and repository created.
 - Day 2: Made basic flask app and UI.
-- Day 3: Integrated Tesseract OCR and added dynamic text rendering
+- Day 3: Integrated Tesseract OCR and added dynamic text rendering with css
