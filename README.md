@@ -83,3 +83,4 @@ The project will be developed incrementally with daily commits including:
 - Day 1: Project initialized and repository created.
 - Day 2: Made basic flask app and UI.
 - Day 3: Integrated Tesseract OCR and added dynamic text rendering with css
+- Day 4: Added download as txt and pdf options
