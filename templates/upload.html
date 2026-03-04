@@ -1,12 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
+<<<<<<< HEAD
     
    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+=======
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+>>>>>>> a32113b (Added Download as PDF and TXT options)
     <title>IDP - Upload Document</title>
     
 </head>
 <body>
+<<<<<<< HEAD
     
     <div class="container">
         <h1>MiniProject IntelliDoc</h1>
@@ -17,13 +22,41 @@
             <button type="submit">Extract Text</button>
         </form>
     
+=======
+
+    <div class="container">
+        <h1>IntelliDoc</h1>
+
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="document" accept=".png,.jpg,.jpeg" required>
+            <br>
+            <button type="submit">Extract Text</button>
+        </form>
+
+>>>>>>> a32113b (Added Download as PDF and TXT options)
         {% if text %}
         <div class="result">
             <h3>Extracted Text:</h3>
             <p>{{ text }}</p>
         </div>
+<<<<<<< HEAD
         {% endif %}
     </div>
     
+=======
+
+        <a href="{{ url_for('download_txt', text=text) }}">
+            <button>Download as TXT</button>
+        </a>
+
+        <a href="{{ url_for('download_pdf', text=text) }}">
+            <button>Download as PDF</button>
+        </a>
+        {% endif %}
+
+       
+    </div>
+
+>>>>>>> a32113b (Added Download as PDF and TXT options)
 </body>
 </html>
