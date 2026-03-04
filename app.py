@@ -12,9 +12,8 @@ if not os.path.exists('uploads'):
     os.makedirs('uploads')
 
 
-# ----------------------------
+
 # Simple Summarization Function
-# ----------------------------
 def simple_summarize(text, num_sentences=3):
     sentences = text.split('.')
     summary = '.'.join(sentences[:num_sentences])
