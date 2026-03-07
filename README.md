@@ -84,4 +84,5 @@ The project will be developed incrementally with daily commits including:
 - Day 2: Made basic flask app and UI.
 - Day 3: Integrated Tesseract OCR and added dynamic text rendering with css
 - Day 4: Added download as txt, pdf options and Summary of the text
+- Day 5: Added Entity Extraction and Detail Extraction
   
