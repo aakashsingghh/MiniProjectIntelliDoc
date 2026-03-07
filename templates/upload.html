@@ -1,45 +1,89 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <title>IDP - Upload Document</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<title>IntelliDoc</title>
 </head>
+
 <body>
 
-    <div class="container">
-        <h1>IntelliDoc</h1>
+<div class="container">
 
-        <form action="/upload" method="POST" enctype="multipart/form-data">
-            <input type="file" name="document" accept=".png,.jpg,.jpeg" required>
-            <br>
-            <button type="submit">Extract Text</button>
-        </form>
+<h1>IntelliDoc</h1>
 
-        {% if text %}
-        <div class="result">
-            <h3>Extracted Text:</h3>
-            <p>{{ text }}</p>
-        </div>
+<form action="/upload" method="POST" enctype="multipart/form-data">
 
-        <a href="{{ url_for('download_txt', text=text) }}">
-            <button>Download as TXT</button>
-        </a>
+<input type="file" name="document" accept=".png,.jpg,.jpeg,.pdf" required>
 
-        <a href="{{ url_for('download_pdf', text=text) }}">
-            <button>Download as PDF</button>
-        </a>
-        {% endif %}
+<br><br>
 
-        {% if summary %}
-        <div class="result">
-            <h3>Summary:</h3>
-            <p>{{ summary }}</p>
-        </div>
-        {% endif %}
-    </div>
+<button type="submit">Extract Text</button>
 
-       
-    </div>
+</form>
+
+
+{% if text %}
+<div class="result">
+
+<h3>Extracted Text:</h3>
+
+<p>{{ text }}</p>
+
+<a href="{{ url_for('download_txt', text=text) }}">
+<button>Download as TXT</button>
+</a>
+
+<a href="{{ url_for('download_pdf', text=text) }}">
+<button>Download as PDF</button>
+</a>
+
+</div>
+{% endif %}
+
+
+{% if summary %}
+<div class="result">
+
+<h3>Summary:</h3>
+
+<p>{{ summary }}</p>
+
+</div>
+{% endif %}
+
+{% if patterns %}
+<div class="result">
+<h3>Detected Information:</h3>
+
+{% for key, value in patterns.items() %}
+<p><b>{{ key }}</b>: {{ value }}</p>
+{% endfor %}
+
+</div>
+{% endif %}
+
+
+{% if entities %}
+<div class="result">
+
+<h3>Detected Entities:</h3>
+
+<ul>
+
+{% for ent, label in entities %}
+
+<li><b>{{ label }}</b> : {{ ent }}</li>
+
+{% endfor %}
+
+</ul>
+
+</div>
+{% endif %}
+
+
+</div>
 
 </body>
 </html>
