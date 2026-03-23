@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+
 import { motion, AnimatePresence } from 'motion/react';
+
 import { 
   LayoutDashboard, 
   Upload as UploadIcon, 
@@ -16,19 +18,30 @@ import {
   X
 } from 'lucide-react';
 import { FileUpload } from './components/FileUpload';
+
 import { ResultDashboard } from './components/ResultDashboard';
+
 import { SearchBar } from './components/SearchBar';
+
 import { processDocumentText } from './lib/gemini';
+
 
 type View = 'home' | 'upload' | 'dashboard' | 'search';
 
+
 export default function App() {
+
   const [view, setView] = useState<View>('home');
+  
   const [documents, setDocuments] = useState<any[]>([]);
+  
   const [isDarkMode, setIsDarkMode] = useState(false);
+  
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
   const [searchQuery, setSearchQuery] = useState('');
 
+  
   useEffect(() => {
     fetchDocuments();
   }, [searchQuery]);
