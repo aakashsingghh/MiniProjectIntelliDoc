@@ -1,38 +1,87 @@
-# INTELLIDOC - Project Documentation
+🚀 INTELLIDOC – Intelligent Document Processing System
 
-## Project Overview
-INTELLIDOC is an Intelligent Document Processing (IDP) platform designed for enterprise automation. It leverages Optical Character Recognition (OCR) and Artificial Intelligence (AI) to convert unstructured documents (images, PDFs) into structured, searchable, and intelligent digital data.
+📌 Overview
 
-## Technologies Used
-- **Frontend**: React 19, Tailwind CSS 4, Lucide Icons, Framer Motion.
-- **Backend**: Node.js, Express.
-- **OCR Engine**: Tesseract.js (WASM-based OCR).
-- **AI/NLP**: Google Gemini 2.0 (for summarization, keyword extraction, and text cleaning).
-- **Database**: SQLite (via better-sqlite3) for structured data persistence.
-- **File Handling**: Multer for uploads, jsPDF for report generation.
+INTELLIDOC is an Intelligent Document Processing (IDP) platform built for enterprise automation.
+It transforms unstructured documents (images, PDFs) into structured, searchable, and meaningful data using OCR and AI.
 
-## Working Pipeline
-1. **Upload**: User uploads a document (PNG, JPG, PDF).
-2. **Preprocessing & OCR**: The system uses Tesseract.js to extract raw text from the document.
-3. **AI Analysis**: The extracted text is sent to the Gemini AI model.
-4. **Intelligent Output**: Gemini generates a concise summary, extracts key entities (keywords), and cleans the text.
-5. **Storage**: The filename, raw text, summary, and keywords are stored in a local SQLite database.
-6. **Dashboard**: Results are displayed in a modern dashboard with search and download capabilities.
+⸻
 
-## Why Preprocessing Improves OCR
-Preprocessing (like grayscaling, thresholding, and noise removal) improves OCR accuracy by:
-- **Increasing Contrast**: Making text stand out from the background.
-- **Removing Noise**: Eliminating artifacts that might be mistaken for characters.
-- **Binarization**: Converting images to black and white helps the OCR engine identify character shapes more clearly.
+🛠️ Tech Stack
 
-## Real-World Applications
-- **Invoice Automation**: Extracting data from billing documents.
-- **Legal Tech**: Summarizing long contracts and searching for clauses.
-- **Healthcare**: Digitizing patient records and extracting key medical terms.
-- **HR**: Processing resumes and extracting skills/experience.
+🔹 Frontend
+	•	React 19
+	•	Tailwind CSS 4
+	•	Lucide Icons
+	•	Framer Motion
 
-## Setup Instructions
-1. **Install Dependencies**: `npm install`
-2. **Configure API Key**: Add `GEMINI_API_KEY` to your environment variables or AI Studio Secrets.
-3. **Run Project**: `npm run dev`
-4. **Access App**: Open `http://localhost:3000` in your browser.
+🔹 Backend
+	•	Node.js
+	•	Express.js
+
+🔹 AI & OCR
+	•	OCR Engine: Tesseract.js (WASM-based)
+	•	AI/NLP: Google Gemini 2.0
+
+🔹 Database & Storage
+	•	SQLite (via better-sqlite3)
+	•	Multer (file uploads)
+	•	jsPDF (report generation)
+
+⸻
+
+⚙️ How It Works (Pipeline)
+	1.	📤 Upload
+User uploads a document (PNG, JPG, PDF)
+	2.	🔍 OCR Processing
+Tesseract.js extracts raw text from the document
+	3.	🧠 AI Processing
+Extracted text is sent to Gemini AI
+	4.	📊 Intelligent Output
+	•	Summary generation
+	•	Keyword extraction
+	•	Text cleaning
+	5.	💾 Storage
+Data stored in SQLite:
+	•	Filename
+	•	Raw text
+	•	Summary
+	•	Keywords
+	6.	📈 Dashboard
+Interactive UI for:
+	•	Viewing results
+	•	Searching data
+	•	Downloading reports
+
+⸻
+
+🧪 Why Preprocessing Matters in OCR
+
+Preprocessing significantly improves OCR accuracy:
+	•	🔆 Contrast Enhancement
+Makes text clearly distinguishable from background
+	•	🧹 Noise Removal
+Eliminates unwanted artifacts
+	•	⚫ Binarization
+Converts image to black & white for better character recognition
+
+⸻
+
+🌍 Real-World Use Cases
+	•	🧾 Invoice Automation
+Extract structured billing data
+	•	⚖️ Legal Tech
+Summarize contracts and detect clauses
+	•	🏥 Healthcare
+Digitize and analyze patient records
+	•	👨‍💼 HR Systems
+Resume parsing and skill extraction
+
+🚀 Getting Started
+
+1️⃣ Install Dependencies
+- npm install
+
+2️⃣ Run the Application
+- npm run dev
+
