@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+        <div>
+            <span class="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-2 rounded-pill"><i class="bi bi-check-circle-fill me-1"></i> Analysis Complete</span>
+            <h2 class="fw-bolder mb-1">Document Dashboard</h2>
+            <p class="text-muted mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark"></i> <span class="fw-semibold text-body">{{ doc.filename }}</span>
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('upload') }}" class="btn btn-light shadow-sm rounded-pill border">
+                <i class="bi bi-arrow-left"></i> New Upload
+            </a>
+            <form action="{{ url_for('delete_doc', doc_id=doc.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this document from the database?');">
+                <button type="submit" class="btn btn-outline-danger shadow-sm rounded-pill">
+                    <i class="bi bi-trash"></i> Delete
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+            <!-- Summary Card -->
+            <div class="card border-0 shadow rounded-4 h-100 bg-primary bg-gradient text-white position-relative overflow-hidden">
+                <!-- Decorative circle -->
+                <div class="position-absolute top-0 end-0 translate-middle text-white text-opacity-10" style="font-size: 15rem; z-index: 0;">
+                    <i class="bi bi-lightning-fill"></i>
+                </div>
+                
+                <div class="card-body p-4 p-xl-5 position-relative z-1 d-flex flex-column">
+                    <h4 class="fw-bold mb-4 border-bottom border-light border-opacity-25 pb-3">
+                        <i class="bi bi-stars me-2 text-warning"></i> AI Summary
+                    </h4>
+                    <p class="mb-0 fs-5" style="line-height: 1.6; font-family: Georgia, serif; font-style: italic;">
+                        "{{ doc.summary }}"
+                    </p>
+                    <div class="mt-auto pt-4">
+                        <span class="badge bg-white text-primary rounded-pill px-3 py-2 shadow-sm">Auto-generated</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <!-- Meta Data Card -->
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-body-tertiary">
+                <div class="card-body p-4 d-flex flex-column">
+                    <h5 class="fw-bold mb-4 text-body-emphasis border-bottom pb-3"><i class="bi bi-tags-fill me-2 text-info"></i> Metadata</h5>
+                    
+                    <div class="mb-4">
+                        <h6 class="text-muted text-uppercase small mb-2 fw-bold letter-spacing-1">Top Keywords</h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% if doc.keywords %}
+                                {% for kw in doc.keywords.split(',') %}
+                                    <span class="badge bg-white text-dark border shadow-sm px-2 py-1">{{ kw.strip() }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted fst-italic small">No keywords found</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-auto bg-white rounded p-3 shadow-sm border">
+                        <h6 class="text-muted text-uppercase small mb-1 fw-bold">Inserted On</h6>
+                        <p class="mb-0 fw-medium text-body-secondary"><i class="bi bi-clock me-1"></i> {{ doc.upload_date.strftime('%b %d, %Y') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+            <!-- Output Actions -->
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white border border-success border-opacity-25">
+                <div class="card-body p-4 d-flex flex-column justify-content-center text-center">
+                    <div class="mb-4">
+                        <div class="bg-success bg-opacity-10 d-inline-block p-3 rounded-circle mb-3">
+                            <i class="bi bi-cloud-download text-success fs-1"></i>
+                        </div>
+                        <h5 class="fw-bold text-success-emphasis mb-1">Export Results</h5>
+                        <p class="text-muted small">Download the OCR extract & summary</p>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-auto">
+                        <a href="{{ url_for('download_pdf', doc_id=doc.id) }}" class="btn btn-success p-3 rounded-pill shadow-sm fw-bold d-flex align-items-center justify-content-center gap-2 btn-hover-lift">
+                            <i class="bi bi-file-earmark-pdf fs-5"></i> Download PDF Report
+                        </a>
+                        <a href="{{ url_for('download_txt', doc_id=doc.id) }}" class="btn btn-outline-secondary p-3 rounded-pill d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-file-earmark-text"></i> Download Raw TXT
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Extracted Text -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mt-2">
+        <div class="card-header bg-body-tertiary border-bottom py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-text-paragraph text-primary"></i> 
+                Extracted OCR Content
+            </h5>
+            <button class="btn btn-sm btn-light border shadow-sm rounded-pill px-3" onclick="copyToClipboard('ocrContent')">
+                <i class="bi bi-clipboard me-1"></i> Copy full text
+            </button>
+        </div>
+        <div class="card-body p-0 position-relative">
+            <div class="bg-dark text-success font-monospace p-4" style="max-height: 500px; overflow-y: auto;">
+                <pre class="m-0 border-0 bg-transparent text-success" id="ocrContent" style="white-space: pre-wrap; word-break: break-word;">{{ doc.extracted_text }}</pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyToClipboard(elementId) {
+        var copyText = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(copyText).then(() => {
+            const toastHtml = `
+                <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080">
+                    <div id="copyToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                <i class="bi bi-check-circle me-2"></i> Copied to clipboard!
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', toastHtml);
+            var toastEl = document.getElementById('copyToast');
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+            setTimeout(() => { toastEl.parentElement.remove(); }, 3000);
+        });
+    }
+</script>
+{% endblock %}

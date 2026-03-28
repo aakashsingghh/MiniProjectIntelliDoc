@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row align-items-center py-5">
+    <div class="col-lg-6 mb-5 mb-lg-0 pe-lg-5 text-center text-lg-start">
+        <div class="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill fw-medium">
+            Next-Gen Enterprise Automation
+        </div>
+        <h1 class="display-4 fw-bolder mb-4 text-gradient">Intelligent Document Processing Platform</h1>
+        <p class="lead text-muted mb-5">
+            Transform unstructured documents into structured, actionable intelligence. INTELLIDOC utilizes OpenCV image preprocessing, Tesseract OCR, and advanced NLP algorithms to extract text, summarize content, and index it for lightning-fast retrieval. 
+        </p>
+        <div class="d-flex gap-3 justify-content-center justify-content-lg-start">
+            <a href="{{ url_for('upload') }}" class="btn btn-primary btn-lg px-4 rounded-pill shadow-sm d-flex align-items-center gap-2">
+                <i class="bi bi-cloud-upload"></i> Start Processing
+            </a>
+            <a href="{{ url_for('search') }}" class="btn btn-outline-secondary btn-lg px-4 rounded-pill d-flex align-items-center gap-2">
+                <i class="bi bi-search"></i> Search Database
+            </a>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 position-relative">
+        <!-- Abstract Decoration -->
+        <div class="position-absolute top-0 end-0 translate-middle-y z-n1 feature-blob"></div>
+        
+        <!-- Hero features card -->
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden hero-card">
+            <div class="card-body p-5">
+                <h3 class="h4 fw-bold mb-4 border-bottom pb-3">Pipeline Overview</h3>
+                
+                <div class="d-flex align-items-start mb-4 step-item">
+                    <div class="icon-box bg-primary text-white rounded mt-1">
+                        <i class="bi bi-file-image"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-1 fw-bold">1. Ingestion & Preprocessing</h5>
+                        <p class="text-muted small mb-0">Drag and drop PDFs or Images. We use OpenCV to clean noise, grayscale, and threshold for maximum accuracy.</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-start mb-4 step-item">
+                    <div class="icon-box bg-success text-white rounded mt-1">
+                        <i class="bi bi-fonts"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-1 fw-bold">2. OCR Extraction</h5>
+                        <p class="text-muted small mb-0">PyTesseract extracts text from multiple languages securely and accurately.</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-start mb-4 step-item">
+                    <div class="icon-box bg-info text-white rounded mt-1">
+                        <i class="bi bi-cpu"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-1 fw-bold">3. NLP Summarization</h5>
+                        <p class="text-muted small mb-0">NLTK & Sumy generate concise summaries and extract key data points automatically.</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-start step-item">
+                    <div class="icon-box bg-warning text-dark rounded mt-1">
+                        <i class="bi bi-database"></i>
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-1 fw-bold">4. Store & Retrieve</h5>
+                        <p class="text-muted small mb-0">Easily search through processed documents, download PDF reports, or export as text.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Section -->
+<div class="row mt-5 pt-4 text-center g-4">
+    <div class="col-md-4">
+        <div class="p-4 bg-body rounded-4 shadow-sm h-100">
+            <i class="bi bi-lightning-charge text-primary fs-1 mb-3"></i>
+            <h3 class="fw-bold">Fast Processing</h3>
+            <p class="text-muted small">Seconds to extract what used to take minutes. Scales easily to bulk processes.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="p-4 bg-body rounded-4 shadow-sm h-100">
+            <i class="bi bi-shield-check text-success fs-1 mb-3"></i>
+            <h3 class="fw-bold">Accurate OCR</h3>
+            <p class="text-muted small">Powered by Tesseract and robust OpenCV image tuning to rescue noisy documents.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="p-4 bg-body rounded-4 shadow-sm h-100">
+            <i class="bi bi-magic text-info fs-1 mb-3"></i>
+            <h3 class="fw-bold">Smart Analysis</h3>
+            <p class="text-muted small">Lexical algorithms automatically determine document significance and summarize data.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
