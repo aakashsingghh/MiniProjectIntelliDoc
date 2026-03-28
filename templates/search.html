@@ -63,16 +63,12 @@
                                 </p>
                             </div>
                             
-                            {% if doc.keywords %}
-                            <div class="mb-4 d-flex flex-wrap gap-1">
-                                {% for kw in doc.keywords.split(',')[:3] %}
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border shadow-sm">{{ kw.strip() }}</span>
-                                {% endfor %}
-                                {% if doc.keywords.split(',')|length > 3 %}
-                                    <span class="badge bg-light text-muted border shadow-sm">+</span>
+                            <div class="mb-4 d-flex flex-wrap gap-2">
+                                <span class="badge bg-primary bg-opacity-10 text-primary border shadow-sm">{{ doc.document_type or "Unknown" }}</span>
+                                {% if doc.priority %}
+                                <span class="badge {% if 'High' in doc.priority %}bg-danger{% elif 'Normal' in doc.priority %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} bg-opacity-10 border shadow-sm">{{ doc.priority }}</span>
                                 {% endif %}
                             </div>
-                            {% endif %}
                             
                             <a href="{{ url_for('result', doc_id=doc.id) }}" class="btn btn-primary rounded-pill w-100 mt-auto fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 transition-all" style="transition: transform 0.2s;">
                                 View Intelligence <i class="bi bi-arrow-right-short fs-5"></i>

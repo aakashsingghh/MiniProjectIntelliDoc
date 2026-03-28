@@ -4,10 +4,14 @@ import numpy as np
 from PIL import Image
 import pytesseract
 from pdf2image import convert_from_path
-import nltk
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.lsa import LsaSummarizer
+import json
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+load_dotenv()
+if os.getenv("GEMINI_API_KEY"):
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
 from flask import Flask, request, render_template, redirect, url_for, send_file, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -17,13 +21,6 @@ from reportlab.lib.styles import getSampleStyleSheet
 import io
 import uuid
 import re
-from collections import Counter
-
-# Download NLTK data required by sumy
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'intellidoc_secret_key'
@@ -40,8 +37,10 @@ class docTable(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(255), nullable=False)
     extracted_text = db.Column(db.Text, nullable=True)
+    document_type = db.Column(db.String(100), nullable=True)
     summary = db.Column(db.Text, nullable=True)
-    keywords = db.Column(db.String(255), nullable=True)
+    priority = db.Column(db.String(50), nullable=True)
+    extracted_data = db.Column(db.Text, nullable=True)
     upload_date = db.Column(db.DateTime, default=datetime.utcnow)
 
 def preprocess_image(image_path):
@@ -97,25 +96,44 @@ def extract_text_from_file(file_path, lang='eng'):
         
     return text.strip()
 
-def extract_keywords(text, num_keywords=5):
-    # Clean text to extract simple keywords
-    stop_words = set(['the', 'is', 'in', 'and', 'or', 'to', 'of', 'a', 'for', 'with', 'on', 'as', 'by', 'an', 'this', 'that', 'from', 'it', 'at', 'be', 'are', 'was', 'were'])
-    words = re.findall(r'\b[a-zA-Z]{4,}\b', text.lower())
-    words = [w for w in words if w not in stop_words]
-    freq = Counter(words)
-    return ", ".join([word for word, count in freq.most_common(num_keywords)])
+def process_document_with_llm(text):
+    if not text or len(text.strip()) < 5:
+        return {"document_type": "Other", "extracted_data": {}, "priority": "", "summary": "No readable text found."}
+    
+    prompt = """You are an Intelligent Document Processing system.
 
-def generate_summary(text, sentences_count=3):
-    if not text or len(text.split()) < 20: 
-        return text
+Your task is to:
+1. Classify the document into ONE of these categories:
+   - Invoice/Bill
+   - Resume
+   - Form
+   - Other
+
+2. Based on the category, extract relevant structured data:
+If Invoice/Bill: Extract Total Amount, Date, Vendor Name. Categorize priority: Amount < 2500 -> "Low Priority", 2500-10000 -> "Normal Priority", >10000 -> "High Priority".
+If Resume: Extract Name, Skills (list), Education, Experience.
+If Form: Extract Key-value pairs.
+If Other: Return short description.
+
+3. Output STRICTLY in JSON format:
+{
+  "document_type": "",
+  "extracted_data": {},
+  "priority": "",
+  "summary": "Concise 2-3 line intelligent summary."
+}
+Do not include any extra text outside JSON.
+"""
     try:
-        parser = PlaintextParser.from_string(text, Tokenizer("english"))
-        summarizer = LsaSummarizer()
-        summary_sentences = summarizer(parser.document, sentences_count)
-        return " ".join([str(sentence) for sentence in summary_sentences])
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(
+            f"{prompt}\n\nDocument Text:\n{text}",
+            generation_config=genai.GenerationConfig(response_mime_type="application/json")
+        )
+        return json.loads(response.text)
     except Exception as e:
-        print(f"Error generating summary: {e}")
-        return text[:200] + "..."
+        print(f"Error calling Gemini API: {e}")
+        return {"document_type": "Error", "extracted_data": {}, "priority": "", "summary": f"Failed to process with AI: {e}"}
 
 @app.route('/')
 def index():
@@ -143,16 +161,17 @@ def upload():
             # 1. OCR Extraction
             extracted_text = extract_text_from_file(filepath, lang=lang)
             
-            # 2. NLP Processing
-            summary = generate_summary(extracted_text)
-            keywords = extract_keywords(extracted_text)
+            # 2. AI Processing
+            llm_result = process_document_with_llm(extracted_text)
             
             # 3. Store in DB
             new_doc = docTable(
                 filename=file.filename,
                 extracted_text=extracted_text,
-                summary=summary,
-                keywords=keywords
+                document_type=llm_result.get("document_type", "Unknown"),
+                summary=llm_result.get("summary", ""),
+                priority=llm_result.get("priority", ""),
+                extracted_data=json.dumps(llm_result.get("extracted_data", {}))
             )
             db.session.add(new_doc)
             db.session.commit()
@@ -165,7 +184,13 @@ def upload():
 @app.route('/result/<int:doc_id>')
 def result(doc_id):
     doc = docTable.query.get_or_404(doc_id)
-    return render_template('result.html', doc=doc)
+    extracted_data_dict = {}
+    if doc.extracted_data:
+        try:
+            extracted_data_dict = json.loads(doc.extracted_data)
+        except:
+            pass
+    return render_template('result.html', doc=doc, extracted_data=extracted_data_dict)
 
 @app.route('/search')
 def search():
@@ -175,7 +200,8 @@ def search():
         results = docTable.query.filter(
             (docTable.filename.ilike(f'%{query}%')) |
             (docTable.extracted_text.ilike(f'%{query}%')) |
-            (docTable.keywords.ilike(f'%{query}%'))
+            (docTable.document_type.ilike(f'%{query}%')) |
+            (docTable.summary.ilike(f'%{query}%'))
         ).order_by(docTable.upload_date.desc()).all()
     else:
         results = docTable.query.order_by(docTable.upload_date.desc()).all()
@@ -193,7 +219,7 @@ def download_txt(doc_id):
     doc = docTable.query.get_or_404(doc_id)
     
     mem = io.BytesIO()
-    content = f"INTELLIDOC RESULT\n\nFilename: {doc.filename}\nUpload Date: {doc.upload_date.strftime('%Y-%m-%d %H:%M:%S')}\n\nKEYWORDS:\n{doc.keywords}\n\nSUMMARY:\n{doc.summary}\n\nFULL EXTRACTED TEXT:\n{doc.extracted_text}"
+    content = f"INTELLIDOC RESULT\n\nFilename: {doc.filename}\nUpload Date: {doc.upload_date.strftime('%Y-%m-%d %H:%M:%S')}\nDocument Type: {doc.document_type}\nPriority: {doc.priority}\n\nSUMMARY:\n{doc.summary}\n\nEXTRACTED DATA:\n{doc.extracted_data}\n\nFULL EXTRACTED TEXT:\n{doc.extracted_text}"
     mem.write(content.encode('utf-8'))
     mem.seek(0)
     
@@ -218,8 +244,10 @@ def download_pdf(doc_id):
     Story.append(Paragraph(f"Date: {doc.upload_date.strftime('%Y-%m-%d %H:%M:%S')}", styles['Normal']))
     Story.append(Spacer(1, 12))
     
-    Story.append(Paragraph("Keywords", styles['Heading2']))
-    Story.append(Paragraph(doc.keywords or "N/A", styles['Normal']))
+    Story.append(Paragraph("Document Details", styles['Heading2']))
+    Story.append(Paragraph(f"Type: {doc.document_type or 'N/A'}", styles['Normal']))
+    if doc.priority:
+        Story.append(Paragraph(f"Priority: {doc.priority}", styles['Normal']))
     Story.append(Spacer(1, 12))
     
     Story.append(Paragraph("Summary", styles['Heading2']))
