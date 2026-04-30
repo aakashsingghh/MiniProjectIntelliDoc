@@ -76,6 +76,7 @@ def init_database():
                 user_id INTEGER REFERENCES users(id),
                 extracted_text TEXT,
                 summary TEXT,
+                structured_data JSONB,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)

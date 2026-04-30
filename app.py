@@ -103,13 +103,17 @@ def save_to_db(data, user_id, extracted_text=None, summary=None):
         organization = data.get("Organization") if data.get("Organization") and data.get("Organization") != "Not Found" else None
         doc_type = data.get("Document Type") if data.get("Document Type") else None
 
+        # Convert full dictionary to JSON for storage
+        import json
+        structured_data_json = json.dumps(data)
+
         cur.execute(
             """
-            INSERT INTO IDPtable (name, dob, email, phone, organization, document_type, user_id, extracted_text, summary, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            INSERT INTO IDPtable (name, dob, email, phone, organization, document_type, user_id, extracted_text, summary, structured_data, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
             RETURNING id
             """,
-            (name, dob, email, phone, organization, doc_type, user_id, extracted_text, summary)
+            (name, dob, email, phone, organization, doc_type, user_id, extracted_text, summary, structured_data_json)
         )
         new_id = cur.fetchone()[0]
         conn.commit()
@@ -748,7 +752,7 @@ def result(doc_id):
 def api_document(doc_id):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT name, document_type, dob, email, phone, organization, extracted_text, summary FROM IDPtable WHERE id = %s AND user_id = %s", (doc_id, session['user_id']))
+    cur.execute("SELECT name, document_type, dob, email, phone, organization, extracted_text, summary, structured_data FROM IDPtable WHERE id = %s AND user_id = %s", (doc_id, session['user_id']))
     doc_row = cur.fetchone()
     cur.close()
     conn.close()
@@ -756,30 +760,22 @@ def api_document(doc_id):
     if not doc_row:
         return {"error": "Not found"}, 404
         
-    name, doc_type, dob, email, phone, org, db_text, db_summary = doc_row
-    
-    # Try to find corresponding in-memory doc for summary/text (fallback)
-    in_memory_doc = None
-    for d in documents:
-        if d.id == doc_id:
-            in_memory_doc = d
-            break
-    
-    summary = db_summary if db_summary else (in_memory_doc.summary if in_memory_doc else f"This is a {doc_type} record. AI Summary is securely stored in logs.")
-    text = db_text if db_text else (in_memory_doc.extracted_text if in_memory_doc else "Raw text is archived.")
-    
-    entities = {
-        "Name": name,
-        "DOB": dob,
-        "Email": email,
-        "Phone": phone,
-        "Organization": org
-    }
+    name, doc_type, dob, email, phone, org, db_text, db_summary, db_structured = doc_row
     
     return {
-        "summary": summary,
-        "text": text,
-        "entities": entities
+        "id": doc_id,
+        "name": name,
+        "document_type": doc_type,
+        "summary": db_summary,
+        "extracted_text": db_text,
+        "structured_data": db_structured if db_structured else {},
+        "entities": {
+            "Name": name,
+            "Date": dob,
+            "Email": email,
+            "Phone": phone,
+            "Organization": org
+        }
     }
 
 @app.route('/search')
