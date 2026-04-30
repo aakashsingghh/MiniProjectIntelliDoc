@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+
+# Env
+.env
+
+# Uploads
+backend/uploads/
+uploads/
+
+# Database / JSON
+*.db
+IDP.json
+backend/IDP.json
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Images (test files)
+*.png
+*.jpg

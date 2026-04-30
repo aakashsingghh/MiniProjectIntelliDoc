@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - IntelliDoc</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="animate-fade-in">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a href="{{ url_for('dashboard') }}" class="sidebar-logo">
+                <i class="fa-solid fa-cube"></i>
+            </a>
+            
+            <a href="{{ url_for('dashboard') }}" class="sidebar-icon" title="Dashboard"><i class="fa-solid fa-house"></i></a>
+            <a href="{{ url_for('documents_page') }}" class="sidebar-icon active" title="Documents"><i class="fa-solid fa-file-lines"></i></a>
+            <a href="{{ url_for('upload') }}" class="sidebar-icon" title="Upload Document"><i class="fa-solid fa-cloud-arrow-up"></i></a>
+            <a href="{{ url_for('profile') }}" class="sidebar-icon" title="Profile"><i class="fa-solid fa-user"></i></a>
+            <a href="{{ url_for('settings') }}" class="sidebar-icon" title="Settings"><i class="fa-solid fa-gear"></i></a>
+            
+            <div class="sidebar-user">
+                <div class="user-avatar" title="{{ session.get('username') }}">{{ session.get('username')[0].upper() if session.get('username') else 'U' }}</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <!-- Top Nav -->
+            <header class="top-nav">
+                <div>
+                    <h1 class="nav-title">All Documents</h1>
+                    <p class="nav-subtitle">Browse, search, and manage all your processed files.</p>
+                </div>
+                
+                <div class="nav-actions">
+                    <form action="{{ url_for('clear_all') }}" method="POST" onsubmit="return confirm('Are you sure you want to clear all documents?');" style="margin: 0;">
+                        <button type="submit" class="icon-btn" style="color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);" title="Clear All Documents"><i class="fa-solid fa-trash-can"></i></button>
+                    </form>
+                    
+                    <a href="{{ url_for('search') }}" class="btn-secondary" style="text-decoration: none;">
+                        <i class="fa-solid fa-list"></i> View All
+                    </a>
+                    
+                    <a href="{{ url_for('upload') }}" class="btn-primary" style="text-decoration: none;">
+                        <i class="fa-solid fa-plus"></i> Upload Document
+                    </a>
+                    
+                    <div class="theme-switch-container" onclick="toggleTheme()" style="margin-left: 1rem;">
+                        <div class="theme-switch">
+                            <span class="theme-switch-text" id="themeText">Dark</span>
+                            <div class="theme-switch-thumb" id="themeThumb">
+                                <i class="fa-solid fa-moon theme-switch-icon" id="themeIcon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('logout') }}" class="icon-btn" style="border:none; margin-left: 0.5rem;" title="Logout"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+                </div>
+            </header>
+
+            <div class="main-grid">
+                <!-- Left Column (Stats + Table) -->
+                <!-- Full Width Content -->
+                <div class="left-col" style="grid-column: 1 / -1;">
+
+                    <!-- Table -->
+                    <div class="table-section">
+                        <div class="table-header">
+                            <h3 class="table-title">Document Library <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-secondary); background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 12px; margin-left: 0.5rem;">Showing {{ user_docs|length }} results</span></h3>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; width: 100%;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                                    <form action="{{ url_for('documents_page') }}" method="GET" style="display:flex; gap:0.5rem; align-items: center; position: relative; flex-grow: 1; max-width: 500px;" id="searchForm">
+                                        <input type="text" name="q" id="searchInput" class="search-input" placeholder="Search document name..." style="width: 100%;" value="{{ query }}" autocomplete="off">
+                                        <input type="hidden" name="type" value="{{ doc_type }}">
+                                        <button type="submit" class="btn-secondary"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+                                        
+                                        <!-- Search Suggestions Dropdown -->
+                                        <div id="searchSuggestions" class="search-suggestions" style="display: none; margin-top: 0.5rem;">
+                                            <!-- populated by JS -->
+                                        </div>
+                                    </form>
+                                    
+                                    <div style="display: flex; background: rgba(255,255,255,0.05); padding: 0.25rem; border-radius: 8px;">
+                                        <button onclick="setView('list')" id="btnList" style="padding: 0.5rem 1rem; border: none; background: var(--accent-purple); color: white; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-list"></i> List</button>
+                                        <button onclick="setView('grid')" id="btnGrid" style="padding: 0.5rem 1rem; border: none; background: transparent; color: var(--text-secondary); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-grid-2"></i><i class="fa-solid fa-table-cells-large"></i> Grid</button>
+                                    </div>
+                                </div>
+                                
+                                <div style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem;">
+                                    <span style="color: var(--text-secondary);">Filters:</span>
+                                    <a href="{{ url_for('documents_page') }}" style="text-decoration: none; padding: 0.2rem 0.6rem; border-radius: 12px; {% if not doc_type %}background: var(--accent-purple); color: white;{% else %}background: rgba(255,255,255,0.05); color: var(--text-secondary);{% endif %}">All</a>
+                                    <a href="{{ url_for('documents_page', type='Resume') }}" style="text-decoration: none; padding: 0.2rem 0.6rem; border-radius: 12px; {% if doc_type == 'Resume' %}background: var(--accent-purple); color: white;{% else %}background: rgba(255,255,255,0.05); color: var(--text-secondary);{% endif %}">Resume</a>
+                                    <a href="{{ url_for('documents_page', type='Invoice') }}" style="text-decoration: none; padding: 0.2rem 0.6rem; border-radius: 12px; {% if doc_type == 'Invoice' %}background: var(--accent-purple); color: white;{% else %}background: rgba(255,255,255,0.05); color: var(--text-secondary);{% endif %}">Invoice</a>
+                                    <a href="{{ url_for('documents_page', type='Form') }}" style="text-decoration: none; padding: 0.2rem 0.6rem; border-radius: 12px; {% if doc_type == 'Form' %}background: var(--accent-purple); color: white;{% else %}background: rgba(255,255,255,0.05); color: var(--text-secondary);{% endif %}">Form</a>
+                                    <a href="{{ url_for('documents_page', type='PAN Card') }}" style="text-decoration: none; padding: 0.2rem 0.6rem; border-radius: 12px; {% if doc_type == 'PAN Card' %}background: var(--accent-purple); color: white;{% else %}background: rgba(255,255,255,0.05); color: var(--text-secondary);{% endif %}">PAN</a>
+                                    <a href="{{ url_for('documents_page', type='Aadhaar Card') }}" style="text-decoration: none; padding: 0.2rem 0.6rem; border-radius: 12px; {% if doc_type == 'Aadhaar Card' %}background: var(--accent-purple); color: white;{% else %}background: rgba(255,255,255,0.05); color: var(--text-secondary);{% endif %}">Aadhaar</a>
+                                    <a href="{{ url_for('documents_page', type='Other') }}" style="text-decoration: none; padding: 0.2rem 0.6rem; border-radius: 12px; {% if doc_type == 'Other' %}background: var(--accent-purple); color: white;{% else %}background: rgba(255,255,255,0.05); color: var(--text-secondary);{% endif %}">Other</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <tr>
+                                        <th>Document Name</th>
+                                        <th>Type</th>
+                                        <th>Processing Date</th>
+                                        <th style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if user_docs %}
+                                        {% for doc in user_docs %}
+                                        <tr style="cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(124, 58, 237, 0.05)'" onmouseout="this.style.background='transparent'" onclick="if(!event.target.closest('button')) openDocModal({{ doc[0] }})">
+                                            <td><div style="display: flex; align-items: center; gap: 10px;"><div style="width: 30px; height: 30px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fa-regular fa-file"></i></div> {{ doc[1] if doc[1] else 'Unknown' }}</div></td>
+                                            <td style="color: var(--text-secondary);">{{ doc[2] }}</td>
+                                            <td style="color: var(--text-secondary);">
+                                                {% if doc[3] %}
+                                                    {% if doc[3] is string %}
+                                                        {{ doc[3] }}
+                                                    {% else %}
+                                                        {{ doc[3].strftime('%Y-%m-%d %H:%M') }}
+                                                    {% endif %}
+                                                {% else %}
+                                                    Unknown
+                                                {% endif %}
+                                            </td>
+                                            <td style="text-align: right;">
+                                                <button onclick="event.stopPropagation(); openDocModal({{ doc[0] }})" class="btn-view" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; background: rgba(124, 58, 237, 0.1); color: var(--accent-purple); border: 1px solid rgba(124, 58, 237, 0.3); cursor: pointer; margin-right: 0.5rem;"><i class="fa-solid fa-eye"></i> View</button>
+                                                <form action="{{ url_for('delete_document', doc_id=doc[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this document forever?');">
+                                                    <button type="submit" class="btn-secondary" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);"><i class="fa-solid fa-trash-can"></i></button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 3rem;">
+                                            <div style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"><i class="fa-solid fa-folder-open"></i></div>
+                                            No documents found.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+
+                        <!-- Grid View Container -->
+                        <div id="gridViewContainer" style="display: none; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+                            {% if user_docs %}
+                                {% for doc in user_docs %}
+                                <div class="dash-card" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 20px rgba(0,0,0,0.2)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'" onclick="if(!event.target.closest('button')) openDocModal({{ doc[0] }})">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                                        <div style="width: 40px; height: 40px; background: rgba(124, 58, 237, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--accent-purple);">
+                                            <i class="fa-solid fa-file-lines fa-lg"></i>
+                                        </div>
+                                        <span class="status-badge completed" style="background: rgba(124, 58, 237, 0.1); color: var(--accent-purple); border: 1px solid rgba(124, 58, 237, 0.3);">{{ doc[2] }}</span>
+                                    </div>
+                                    <h4 style="margin: 0 0 0.5rem 0; font-weight: 500; font-size: 1rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ doc[1] }}">{{ doc[1] if doc[1] else 'Unknown' }}</h4>
+                                    <p style="margin: 0 0 1rem 0; font-size: 0.8rem; color: var(--text-secondary);">
+                                        <i class="fa-regular fa-clock"></i> 
+                                        {% if doc[3] %}{% if doc[3] is string %}{{ doc[3] }}{% else %}{{ doc[3].strftime('%b %d, %Y') }}{% endif %}{% else %}Unknown{% endif %}
+                                    </p>
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <button onclick="event.stopPropagation(); openDocModal({{ doc[0] }})" class="btn-view" style="flex: 1; padding: 6px 12px; font-size: 13px; border-radius: 6px; background: rgba(124, 58, 237, 0.1); color: var(--accent-purple); border: 1px solid rgba(124, 58, 237, 0.3); cursor: pointer;"><i class="fa-solid fa-eye"></i> View</button>
+                                        <form action="{{ url_for('delete_document', doc_id=doc[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this document forever?');">
+                                            <button type="submit" class="btn-secondary" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);"><i class="fa-solid fa-trash-can"></i></button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div style="grid-column: 1 / -1; text-align: center; color: var(--text-secondary); padding: 3rem;">
+                                    <div style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"><i class="fa-solid fa-folder-open"></i></div>
+                                    No documents found.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column removed for full width -->
+            </div>
+                    
+                    <div class="dash-card">
+                        <h3 style="font-size: 0.95rem; font-weight: 500; margin-top: 0; margin-bottom: 1rem;">System Insights</h3>
+                        
+                        <div style="margin-top: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 1rem; color: var(--text-secondary); align-items: center;">
+                                <span><i class="fa-solid fa-file me-2"></i> Latest File</span>
+                                <span style="color: var(--text-primary); font-weight: 500; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ latest_doc }}">{{ latest_doc }}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 1rem; color: var(--text-secondary); align-items: center;">
+                                <span><i class="fa-solid fa-chart-bar me-2"></i> Most Common Type</span>
+                                <span style="color: var(--text-primary); font-weight: 500;">{{ most_common_type }}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 1rem; color: var(--text-secondary); align-items: center;">
+                                <span><i class="fa-solid fa-server me-2"></i> OCR Server</span>
+                                <span style="color: #34d399; font-weight: 500; background: rgba(52, 211, 153, 0.1); padding: 0.2rem 0.6rem; border-radius: 999px;">Online</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--text-secondary); align-items: center;">
+                                <span><i class="fa-solid fa-database me-2"></i> Database</span>
+                                <span style="color: #34d399; font-weight: 500; background: rgba(52, 211, 153, 0.1); padding: 0.2rem 0.6rem; border-radius: 999px;">Connected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Document Details Modal -->
+    <div id="docModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div class="dash-card" style="width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; position: relative;">
+            <button onclick="closeDocModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            <h2 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Document Insights</h2>
+            
+            <div id="modalLoading" style="text-align: center; color: var(--accent-purple); padding: 2rem;">
+                <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+            </div>
+            
+            <div id="modalContent" style="display: none;">
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent-purple); margin-bottom: 0.5rem; font-size: 0.9rem;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Summary</h4>
+                    <div id="modalSummary" style="background: var(--bg-primary); border: 1px solid rgba(124, 58, 237, 0.3); padding: 1rem; border-radius: 6px; font-size: 0.9rem; line-height: 1.5; color: var(--text-primary);"></div>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: #34d399; margin-bottom: 0.5rem; font-size: 0.9rem;"><i class="fa-solid fa-database"></i> Extracted Entities</h4>
+                    <table class="custom-table" style="font-size: 0.85rem; border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 6px; overflow: hidden; display: table;">
+                        <tbody id="modalEntities"></tbody>
+                    </table>
+                </div>
+                
+                <div>
+                    <h4 style="color: #60a5fa; margin-bottom: 0.5rem; font-size: 0.9rem;"><i class="fa-solid fa-align-left"></i> Raw Text Preview</h4>
+                    <div id="modalText" style="background: var(--bg-primary); border: 1px solid rgba(96, 165, 250, 0.3); padding: 1rem; border-radius: 6px; font-size: 0.8rem; font-family: monospace; color: var(--text-primary); white-space: pre-wrap; max-height: 150px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        async function openDocModal(id) {
+            document.getElementById('docModal').style.display = 'flex';
+            document.getElementById('modalLoading').style.display = 'block';
+            document.getElementById('modalContent').style.display = 'none';
+            
+            try {
+                const response = await fetch(`/api/document/${id}`);
+                const data = await response.json();
+                
+                document.getElementById('modalSummary').textContent = data.summary;
+                document.getElementById('modalText').textContent = data.text;
+                
+                const entitiesTbody = document.getElementById('modalEntities');
+                entitiesTbody.innerHTML = '';
+                for (const [key, value] of Object.entries(data.entities)) {
+                    if (value && value !== 'Not Found') {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td style="color: var(--text-secondary); width: 30%;">${key}</td><td>${value}</td>`;
+                        entitiesTbody.appendChild(tr);
+                    }
+                }
+                
+                document.getElementById('modalLoading').style.display = 'none';
+                document.getElementById('modalContent').style.display = 'block';
+            } catch (err) {
+                document.getElementById('modalLoading').innerHTML = '<span style="color:#ef4444;">Failed to load data.</span>';
+            }
+        }
+        
+        function closeDocModal() {
+            document.getElementById('docModal').style.display = 'none';
+        }
+
+        // View Toggle (List/Grid)
+        function setView(view) {
+            const table = document.querySelector('.custom-table');
+            const grid = document.getElementById('gridViewContainer');
+            const btnList = document.getElementById('btnList');
+            const btnGrid = document.getElementById('btnGrid');
+
+            if (view === 'grid') {
+                table.style.display = 'none';
+                grid.style.display = 'grid';
+                btnGrid.style.background = 'var(--accent-purple)';
+                btnGrid.style.color = 'white';
+                btnList.style.background = 'transparent';
+                btnList.style.color = 'var(--text-secondary)';
+                localStorage.setItem('docView', 'grid');
+            } else {
+                table.style.display = 'table';
+                grid.style.display = 'none';
+                btnList.style.background = 'var(--accent-purple)';
+                btnList.style.color = 'white';
+                btnGrid.style.background = 'transparent';
+                btnGrid.style.color = 'var(--text-secondary)';
+                localStorage.setItem('docView', 'list');
+            }
+        }
+        
+        // Initialize view
+        if (localStorage.getItem('docView') === 'grid') {
+            setView('grid');
+        }
+
+        // Live Search Suggestions
+        const searchInput = document.getElementById('searchInput');
+        const suggestionsBox = document.getElementById('searchSuggestions');
+        
+        searchInput.addEventListener('input', async (e) => {
+            const query = e.target.value.trim();
+            if (query.length < 2) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const res = await fetch(`/search_suggestions?q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                
+                if (data.suggestions && data.suggestions.length > 0) {
+                    suggestionsBox.innerHTML = '';
+                    data.suggestions.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'search-item';
+                        div.innerHTML = `<i class="fa-regular fa-file" style="margin-right: 8px; color: var(--text-secondary);"></i> ${item.name} <span style="font-size: 0.75rem; color: var(--text-secondary); margin-left: 8px; padding: 2px 6px; background: rgba(124, 58, 237, 0.1); color: var(--accent-purple); border-radius: 4px;">${item.type}</span>`;
+                        
+                        div.onclick = () => {
+                            searchInput.value = item.name;
+                            suggestionsBox.style.display = 'none';
+                            document.getElementById('searchForm').submit();
+                        };
+                        suggestionsBox.appendChild(div);
+                    });
+                    suggestionsBox.style.display = 'block';
+                } else {
+                    suggestionsBox.style.display = 'none';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        // Hide suggestions on click outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                suggestionsBox.style.display = 'none';
+            }
+        });
+
+
+
+        function toggleTheme() {
+            const body = document.body;
+            const isLight = body.classList.toggle('light-mode');
+            const themeText = document.getElementById('themeText');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (isLight) {
+                themeText.textContent = "Light";
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'light');
+            } else {
+                themeText.textContent = "Dark";
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            document.getElementById('themeText').textContent = "Light";
+            const icon = document.getElementById('themeIcon');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - IntelliDoc</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="animate-fade-in">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a href="{{ url_for('dashboard') }}" class="sidebar-logo">
+                <i class="fa-solid fa-cube"></i>
+            </a>
+            
+            <a href="{{ url_for('dashboard') }}" class="sidebar-icon" title="Dashboard"><i class="fa-solid fa-house"></i></a>
+            <a href="{{ url_for('search') }}" class="sidebar-icon active" title="Search Documents"><i class="fa-solid fa-magnifying-glass"></i></a>
+            <a href="{{ url_for('upload') }}" class="sidebar-icon" title="Upload Document"><i class="fa-solid fa-cloud-arrow-up"></i></a>
+            
+            <div class="sidebar-user">
+                <div class="user-avatar" title="{{ session.get('username') }}">{{ session.get('username')[0].upper() if session.get('username') else 'U' }}</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-nav">
+                <div>
+                    <h1 class="nav-title">Search Documents</h1>
+                    <p class="nav-subtitle">Find documents, invoices, or specific extracted data.</p>
+                </div>
+                
+                <div class="nav-actions">
+                    <div class="theme-switch-container" onclick="toggleTheme()">
+                        <div class="theme-switch">
+                            <span class="theme-switch-text" id="themeText">Dark</span>
+                            <div class="theme-switch-thumb" id="themeThumb">
+                                <i class="fa-solid fa-moon theme-switch-icon" id="themeIcon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="btn-secondary" style="border:none; padding: 0.5rem;"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+                </div>
+            </header>
+
+            <div class="dash-card" style="margin-bottom: 2rem;">
+                <form action="{{ url_for('search') }}" method="GET" style="display: flex; gap: 1rem; align-items: center;">
+                    <div style="flex-grow: 1; position: relative;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+                        <input type="text" class="form-control-custom" style="width: 100%; box-sizing: border-box; padding-left: 2.5rem;" name="q" placeholder="Search by filename, summary, or content..." value="{{ query }}">
+                    </div>
+                    
+                    <div style="min-width: 150px;">
+                        <select class="form-control-custom" style="width: 100%; box-sizing: border-box;" name="type">
+                            <option value="">All Types</option>
+                            <option value="Resume" {% if doc_type == 'Resume' %}selected{% endif %}>Resume</option>
+                            <option value="Form" {% if doc_type == 'Form' %}selected{% endif %}>Form</option>
+                            <option value="Invoice" {% if doc_type == 'Invoice' %}selected{% endif %}>Invoice</option>
+                            <option value="PAN Card" {% if doc_type == 'PAN Card' %}selected{% endif %}>PAN Card</option>
+                            <option value="Aadhaar Card" {% if doc_type == 'Aadhaar Card' %}selected{% endif %}>Aadhaar Card</option>
+                            <option value="Other" {% if doc_type == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary" style="height: 100%; padding: 0.8rem 1.5rem;"><i class="fa-solid fa-filter"></i> Filter</button>
+                </form>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+                {% if docs %}
+                    {% for doc in docs %}
+                    <div class="dash-card" style="display: flex; flex-direction: column; height: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                            <span class="status-badge processing" style="background: var(--accent-purple-glow); color: white;">{{ doc.document_type }}</span>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary);">{{ doc.priority }}</span>
+                        </div>
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ doc.filename }}">{{ doc.filename }}</h4>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                            <i class="fa-regular fa-calendar me-1"></i> {{ doc.created_at.strftime('%Y-%m-%d') }}
+                        </div>
+                        
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 1.5rem; flex-grow: 1;">
+                            {{ doc.summary | safe }}
+                        </div>
+                        
+                        <div style="margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                            <a href="{{ url_for('result', doc_id=doc.id) }}" class="btn-secondary" style="width: 100%; justify-content: center; text-decoration: none;">View Details</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 0;">
+                        <i class="fa-regular fa-folder-open text-secondary" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <h4 style="margin-bottom: 0.5rem;">No documents found</h4>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Try adjusting your search query or upload a new document.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const isLight = body.classList.toggle('light-mode');
+            const themeText = document.getElementById('themeText');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (isLight) {
+                themeText.textContent = "Light";
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'light');
+            } else {
+                themeText.textContent = "Dark";
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            document.getElementById('themeText').textContent = "Light";
+            const icon = document.getElementById('themeIcon');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+    </script>
+</body>
+</html>

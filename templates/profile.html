@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - IntelliDoc</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .profile-avatar-large {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--accent-purple);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        .profile-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        .form-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body class="animate-fade-in">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a href="{{ url_for('dashboard') }}" class="sidebar-logo">
+                <i class="fa-solid fa-cube"></i>
+            </a>
+            
+            <a href="{{ url_for('dashboard') }}" class="sidebar-icon" title="Dashboard"><i class="fa-solid fa-house"></i></a>
+            <a href="{{ url_for('documents_page') }}" class="sidebar-icon" title="Documents"><i class="fa-solid fa-file-lines"></i></a>
+            <a href="{{ url_for('upload') }}" class="sidebar-icon" title="Upload Document"><i class="fa-solid fa-cloud-arrow-up"></i></a>
+            <a href="{{ url_for('profile') }}" class="sidebar-icon active" title="Profile"><i class="fa-solid fa-user"></i></a>
+            <a href="{{ url_for('settings') }}" class="sidebar-icon" title="Settings"><i class="fa-solid fa-gear"></i></a>
+            
+            <div class="sidebar-user">
+                <div class="user-avatar" title="{{ session.get('username') }}">{{ session.get('username')[0].upper() if session.get('username') else 'U' }}</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-nav">
+                <div>
+                    <h1 class="nav-title">Profile</h1>
+                    <p class="nav-subtitle">Manage your personal and business information.</p>
+                </div>
+                
+                <div class="nav-actions">
+                    <div class="theme-switch-container" onclick="toggleTheme()" style="margin-left: 1rem;">
+                        <div class="theme-switch">
+                            <span class="theme-switch-text" id="themeText">Dark</span>
+                            <div class="theme-switch-thumb" id="themeThumb">
+                                <i class="fa-solid fa-moon theme-switch-icon" id="themeIcon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('logout') }}" class="icon-btn" style="border:none; margin-left: 0.5rem;" title="Logout"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+                </div>
+            </header>
+
+            <div class="profile-container">
+                <div class="dash-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar-large">
+                            {{ user[0][0].upper() if user and user[0] else 'U' }}
+                        </div>
+                        <div>
+                            <h2 style="margin: 0 0 0.5rem 0; font-size: 1.5rem;">{{ user[1] if user[1] else user[0] }}</h2>
+                            <p style="margin: 0; color: var(--text-secondary);">{{ user[2] if user[2] else 'No email provided' }}</p>
+                        </div>
+                    </div>
+
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            <div style="background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.3); color: #34d399; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem;">
+                                {% for message in messages %}
+                                    <i class="fa-solid fa-circle-check"></i> {{ message }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+
+                    <form action="{{ url_for('profile') }}" method="POST" class="profile-form">
+                        <div class="form-group full-width">
+                            <h3 style="margin: 0; font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">Personal Information</h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" name="full_name" class="form-control-custom" value="{{ user[1] if user[1] else '' }}" placeholder="John Doe">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" name="email" class="form-control-custom" value="{{ user[2] if user[2] else '' }}" placeholder="john@example.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Phone Number</label>
+                            <input type="text" name="phone" class="form-control-custom" value="{{ user[3] if user[3] else '' }}" placeholder="+1 234 567 8900">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Address</label>
+                            <input type="text" name="address" class="form-control-custom" value="{{ user[4] if user[4] else '' }}" placeholder="123 Main St, City, Country">
+                        </div>
+
+                        <div class="form-group full-width" style="margin-top: 1rem;">
+                            <h3 style="margin: 0; font-size: 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">Business Information</h3>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Business Name</label>
+                            <input type="text" name="business_name" class="form-control-custom" value="{{ user[5] if user[5] else '' }}" placeholder="Acme Corp">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Company Type</label>
+                            <select name="company_type" class="form-control-custom" style="appearance: auto;">
+                                <option value="">Select Type</option>
+                                <option value="Individual" {% if user[6] == 'Individual' %}selected{% endif %}>Individual</option>
+                                <option value="LLC" {% if user[6] == 'LLC' %}selected{% endif %}>LLC</option>
+                                <option value="Corporation" {% if user[6] == 'Corporation' %}selected{% endif %}>Corporation</option>
+                                <option value="Non-Profit" {% if user[6] == 'Non-Profit' %}selected{% endif %}>Non-Profit</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group full-width" style="margin-top: 1.5rem; text-align: right;">
+                            <button type="submit" class="btn-primary" style="display: inline-flex;"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const isLight = body.classList.toggle('light-mode');
+            const themeText = document.getElementById('themeText');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (isLight) {
+                themeText.textContent = "Light";
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'light');
+            } else {
+                themeText.textContent = "Dark";
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            document.getElementById('themeText').textContent = "Light";
+            const icon = document.getElementById('themeIcon');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+    </script>
+</body>
+</html>

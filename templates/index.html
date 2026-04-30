@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliDoc - AI Document Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .landing-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        .landing-nav {
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        body.light-mode .landing-nav {
+            border-bottom-color: var(--border-color-light);
+        }
+        .landing-logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        body.light-mode .landing-logo {
+            color: var(--text-primary-light);
+        }
+        .landing-logo i {
+            color: var(--accent-purple);
+            text-shadow: 0 0 15px var(--accent-purple-glow);
+        }
+        .hero-section {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 4rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-title {
+            font-size: 4.5rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff, #8c8c93);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            max-width: 900px;
+        }
+        body.light-mode .hero-title {
+            background: linear-gradient(135deg, #121215, #5a5a62);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            max-width: 700px;
+        }
+        body.light-mode .hero-subtitle {
+            color: var(--text-secondary-light);
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+        }
+        .feature-card {
+            background: var(--card-dark);
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        body.light-mode .feature-card {
+            background: var(--card-light);
+            border-color: var(--border-color-light);
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-color: var(--accent-purple);
+        }
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--accent-purple);
+            margin-bottom: 1.5rem;
+        }
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .feature-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        body.light-mode .feature-desc {
+            color: var(--text-secondary-light);
+        }
+    </style>
+</head>
+<body class="animate-fade-in">
+    <div class="landing-wrapper">
+        <nav class="landing-nav">
+            <div class="landing-logo">
+                <i class="fa-solid fa-cube"></i> IntelliDoc
+            </div>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <div class="theme-switch-container" onclick="toggleTheme()" style="margin-right: 1.5rem;">
+                    <div class="theme-switch">
+                        <span class="theme-switch-text" id="themeText">Dark</span>
+                        <div class="theme-switch-thumb" id="themeThumb">
+                            <i class="fa-solid fa-moon theme-switch-icon" id="themeIcon"></i>
+                        </div>
+                    </div>
+                </div>
+                <a href="{{ url_for('login') }}" style="color: var(--text-secondary); text-decoration: none; font-weight: 500;">Login</a>
+                <a href="{{ url_for('register') }}" class="btn-primary">Get Started</a>
+            </div>
+        </nav>
+
+        <main class="hero-section">
+            <div style="position: absolute; top: -20%; left: -10%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%); border-radius: 50%; pointer-events: none;"></div>
+            <div style="position: absolute; bottom: -20%; right: -10%; width: 600px; height: 600px; background: radial-gradient(circle, rgba(52, 211, 153, 0.05) 0%, transparent 70%); border-radius: 50%; pointer-events: none;"></div>
+
+            <div style="display: inline-block; padding: 0.5rem 1rem; background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.3); border-radius: 999px; color: var(--accent-purple); font-size: 0.85rem; font-weight: 600; margin-bottom: 2rem;">
+                <i class="fa-solid fa-sparkles"></i> IntelliDoc AI Engine 2.0
+            </div>
+
+            <h1 class="hero-title">AI-powered document understanding platform</h1>
+            <p class="hero-subtitle">Transform unstructured documents into structured insights automatically with industry-leading OCR and NLP models.</p>
+            
+            <div style="display: flex; gap: 1.5rem;">
+                <a href="{{ url_for('login') }}" class="btn-primary" style="padding: 1rem 2.5rem; font-size: 1.1rem; box-shadow: 0 10px 25px var(--accent-purple-glow);">
+                    Get Started Free <i class="fa-solid fa-arrow-right"></i>
+                </a>
+                <a href="{{ url_for('demo') }}" class="try-demo-btn" style="padding: 1rem 2.5rem; font-size: 1.1rem; text-decoration: none;">
+                    Try Demo
+                </a>
+            </div>
+        </main>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <i class="fa-solid fa-expand feature-icon"></i>
+                <h3 class="feature-title">OCR Recognition</h3>
+                <p class="feature-desc">Extract text from scanned PDFs, images, and unselectable files with highly accurate Tesseract processing.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-microchip feature-icon"></i>
+                <h3 class="feature-title">Entity Extraction</h3>
+                <p class="feature-desc">Automatically detect and parse names, dates, organizations, and monetary values using advanced SpaCy NLP models.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-layer-group feature-icon"></i>
+                <h3 class="feature-title">Smart Classification</h3>
+                <p class="feature-desc">Categorize documents intelligently into Invoices, Resumes, Forms, and IDs based on content analysis.</p>
+            </div>
+            <div class="feature-card">
+                <i class="fa-solid fa-wand-magic-sparkles feature-icon"></i>
+                <h3 class="feature-title">Auto Summarization</h3>
+                <p class="feature-desc">Generate contextual, easy-to-read summaries of multi-page documents instantly.</p>
+            </div>
+        </div>
+        
+        <footer style="text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.9rem; border-top: 1px solid var(--border-color);">
+            &copy; 2026 IntelliDoc Platform. All rights reserved.
+        </footer>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const isLight = body.classList.toggle('light-mode');
+            const themeText = document.getElementById('themeText');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (isLight) {
+                themeText.textContent = "Light";
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'light');
+            } else {
+                themeText.textContent = "Dark";
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            document.getElementById('themeText').textContent = "Light";
+            const icon = document.getElementById('themeIcon');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+    </script>
+</body>
+</html>

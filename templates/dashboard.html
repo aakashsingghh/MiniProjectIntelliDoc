@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - IntelliDoc</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="animate-fade-in">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a href="{{ url_for('dashboard') }}" class="sidebar-logo">
+                <i class="fa-solid fa-cube"></i>
+            </a>
+            
+            <a href="{{ url_for('dashboard') }}" class="sidebar-icon active" title="Dashboard"><i class="fa-solid fa-house"></i></a>
+            <a href="{{ url_for('documents_page') }}" class="sidebar-icon" title="Documents"><i class="fa-solid fa-file-lines"></i></a>
+            <a href="{{ url_for('upload') }}" class="sidebar-icon" title="Upload Document"><i class="fa-solid fa-cloud-arrow-up"></i></a>
+            <a href="{{ url_for('profile') }}" class="sidebar-icon" title="Profile"><i class="fa-solid fa-user"></i></a>
+            <a href="{{ url_for('settings') }}" class="sidebar-icon" title="Settings"><i class="fa-solid fa-gear"></i></a>
+            
+            <div class="sidebar-user">
+                <div class="user-avatar" title="{{ session.get('username') }}">{{ session.get('username')[0].upper() if session.get('username') else 'U' }}</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <!-- Top Nav -->
+            <header class="top-nav">
+                <div>
+                    <h1 class="nav-title">Dashboard</h1>
+                    <p class="nav-subtitle">Manage your documents, monitor processing progress, and oversee intelligent extraction.</p>
+                </div>
+                
+                <div class="nav-actions">
+                    <form action="{{ url_for('clear_all') }}" method="POST" onsubmit="return confirm('Are you sure you want to clear all documents?');" style="margin: 0;">
+                        <button type="submit" class="icon-btn" style="color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);" title="Clear All Documents"><i class="fa-solid fa-trash-can"></i></button>
+                    </form>
+                    
+                    <a href="{{ url_for('documents_page') }}" class="btn-secondary" style="text-decoration: none;">
+                        <i class="fa-solid fa-list"></i> View All
+                    </a>
+                    
+                    <a href="{{ url_for('upload') }}" class="btn-primary" style="text-decoration: none;">
+                        <i class="fa-solid fa-plus"></i> Upload Document
+                    </a>
+                    
+                    <div class="theme-switch-container" onclick="toggleTheme()" style="margin-left: 1rem;">
+                        <div class="theme-switch">
+                            <span class="theme-switch-text" id="themeText">Dark</span>
+                            <div class="theme-switch-thumb" id="themeThumb">
+                                <i class="fa-solid fa-moon theme-switch-icon" id="themeIcon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('logout') }}" class="icon-btn" style="border:none; margin-left: 0.5rem;" title="Logout"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+                </div>
+            </header>
+
+            <div class="main-grid">
+                <!-- Left Column (Stats + Table) -->
+                <div class="left-col">
+                    <!-- Stats Grid -->
+                    <div class="dashboard-grid">
+                        <div class="dash-card">
+                            <div class="stat-header">
+                                <div class="stat-icon purple"><i class="fa-solid fa-file-invoice"></i></div>
+                                Total Documents
+                            </div>
+                            <div class="stat-value">
+                                {{ total_docs }}
+                                
+                            </div>
+                        </div>
+
+                        <div class="dash-card">
+                            <div class="stat-header">
+                                <div class="stat-icon yellow"><i class="fa-solid fa-box-open"></i></div>
+                                Common Type
+                            </div>
+                            <div class="stat-value" style="font-size: 1.5rem;">
+                                {{ most_common_type }}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="dash-card" style="position: relative;">
+                        <h3 style="font-size: 0.95rem; font-weight: 500; margin-top: 0; margin-bottom: 1rem;">Documents by Type</h3>
+                        <div style="height: 250px;">
+                            <canvas id="typeChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="table-section">
+                        <div class="table-header">
+                            <h3 class="table-title">Recent Documents <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-secondary); background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 12px; margin-left: 0.5rem;">Showing {{ user_docs|length }} results</span></h3>
+                            <div class="table-controls">
+                                <form action="{{ url_for('dashboard') }}" method="GET" style="display:flex; gap:0.5rem; align-items: center;">
+                                    <input type="text" name="q" class="search-input" placeholder="Search name or type..." style="width: 180px;" value="{{ query }}">
+                                    <select name="type" class="search-input" style="width: auto; padding-left: 1rem; background-image: none; cursor: pointer;">
+                                        <option value="">All Types</option>
+                                        <option value="Resume" {% if doc_type == 'Resume' %}selected{% endif %}>Resume</option>
+                                        <option value="Form" {% if doc_type == 'Form' %}selected{% endif %}>Form</option>
+                                        <option value="Invoice" {% if doc_type == 'Invoice' %}selected{% endif %}>Invoice</option>
+                                        <option value="PAN Card" {% if doc_type == 'PAN Card' %}selected{% endif %}>PAN Card</option>
+                                        <option value="Aadhaar Card" {% if doc_type == 'Aadhaar Card' %}selected{% endif %}>Aadhaar Card</option>
+                                        <option value="Other" {% if doc_type == 'Other' %}selected{% endif %}>Other</option>
+                                    </select>
+                                    <button type="submit" class="btn-secondary"><i class="fa-solid fa-filter"></i> Filter</button>
+                                    {% if query or doc_type %}
+                                        <a href="{{ url_for('dashboard') }}" class="btn-secondary" style="border:none; color: var(--text-secondary);" title="Clear Filters"><i class="fa-solid fa-xmark"></i></a>
+                                    {% endif %}
+                                </form>
+                            </div>
+                        </div>
+
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <tr>
+                                        <th>Document Name</th>
+                                        <th>Type</th>
+                                        <th>Processing Date</th>
+                                        <th style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if user_docs %}
+                                        {% for doc in user_docs %}
+                                        <tr style="cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(124, 58, 237, 0.05)'" onmouseout="this.style.background='transparent'" onclick="if(!event.target.closest('button')) openDocModal({{ doc[0] }})">
+                                            <td><div style="display: flex; align-items: center; gap: 10px;"><div style="width: 30px; height: 30px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center;"><i class="fa-regular fa-file"></i></div> {{ doc[1] if doc[1] else 'Unknown' }}</div></td>
+                                            <td style="color: var(--text-secondary);">{{ doc[2] }}</td>
+                                            <td style="color: var(--text-secondary);">
+                                                {% if doc[3] %}
+                                                    {% if doc[3] is string %}
+                                                        {{ doc[3] }}
+                                                    {% else %}
+                                                        {{ doc[3].strftime('%Y-%m-%d %H:%M') }}
+                                                    {% endif %}
+                                                {% else %}
+                                                    Unknown
+                                                {% endif %}
+                                            </td>
+                                            <td style="text-align: right;">
+                                                <button onclick="event.stopPropagation(); openDocModal({{ doc[0] }})" class="btn-view" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; background: rgba(124, 58, 237, 0.1); color: var(--accent-purple); border: 1px solid rgba(124, 58, 237, 0.3); cursor: pointer; margin-right: 0.5rem;"><i class="fa-solid fa-eye"></i> View</button>
+                                                <form action="{{ url_for('delete_document', doc_id=doc[0]) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete this document forever?');">
+                                                    <button type="submit" class="btn-secondary" style="padding: 6px 12px; font-size: 13px; border-radius: 6px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);"><i class="fa-solid fa-trash-can"></i></button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 3rem;">
+                                            <div style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"><i class="fa-solid fa-folder-open"></i></div>
+                                            No documents found.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                        <div style="text-align: center; margin-top: 1.5rem;">
+                            <a href="{{ url_for('documents_page') }}" class="btn-secondary" style="display: inline-flex; text-decoration: none;"><i class="fa-solid fa-arrow-right-long"></i> View All Documents</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="right-col" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    
+                    <div class="dash-card">
+                        <h3 style="font-size: 0.95rem; font-weight: 500; margin-top: 0; margin-bottom: 1rem;">System Insights</h3>
+                        
+                        <div style="margin-top: 0.5rem;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 1rem; color: var(--text-secondary); align-items: center;">
+                                <span><i class="fa-solid fa-file me-2"></i> Latest File</span>
+                                <span style="color: var(--text-primary); font-weight: 500; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ latest_doc }}">{{ latest_doc }}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 1rem; color: var(--text-secondary); align-items: center;">
+                                <span><i class="fa-solid fa-chart-bar me-2"></i> Most Common Type</span>
+                                <span style="color: var(--text-primary); font-weight: 500;">{{ most_common_type }}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 1rem; color: var(--text-secondary); align-items: center;">
+                                <span><i class="fa-solid fa-server me-2"></i> OCR Server</span>
+                                <span style="color: #34d399; font-weight: 500; background: rgba(52, 211, 153, 0.1); padding: 0.2rem 0.6rem; border-radius: 999px;">Online</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--text-secondary); align-items: center;">
+                                <span><i class="fa-solid fa-database me-2"></i> Database</span>
+                                <span style="color: #34d399; font-weight: 500; background: rgba(52, 211, 153, 0.1); padding: 0.2rem 0.6rem; border-radius: 999px;">Connected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Document Details Modal -->
+    <div id="docModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div class="dash-card" style="width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; position: relative;">
+            <button onclick="closeDocModal()" style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            <h2 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.2rem;">Document Insights</h2>
+            
+            <div id="modalLoading" style="text-align: center; color: var(--accent-purple); padding: 2rem;">
+                <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>
+            </div>
+            
+            <div id="modalContent" style="display: none;">
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--accent-purple); margin-bottom: 0.5rem; font-size: 0.9rem;"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Summary</h4>
+                    <div id="modalSummary" style="background: var(--bg-primary); border: 1px solid rgba(124, 58, 237, 0.3); padding: 1rem; border-radius: 6px; font-size: 0.9rem; line-height: 1.5; color: var(--text-primary);"></div>
+                </div>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="color: #34d399; margin-bottom: 0.5rem; font-size: 0.9rem;"><i class="fa-solid fa-database"></i> Extracted Entities</h4>
+                    <table class="custom-table" style="font-size: 0.85rem; border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 6px; overflow: hidden; display: table;">
+                        <tbody id="modalEntities"></tbody>
+                    </table>
+                </div>
+                
+                <div>
+                    <h4 style="color: #60a5fa; margin-bottom: 0.5rem; font-size: 0.9rem;"><i class="fa-solid fa-align-left"></i> Raw Text Preview</h4>
+                    <div id="modalText" style="background: var(--bg-primary); border: 1px solid rgba(96, 165, 250, 0.3); padding: 1rem; border-radius: 6px; font-size: 0.8rem; font-family: monospace; color: var(--text-primary); white-space: pre-wrap; max-height: 150px; overflow-y: auto;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        async function openDocModal(id) {
+            document.getElementById('docModal').style.display = 'flex';
+            document.getElementById('modalLoading').style.display = 'block';
+            document.getElementById('modalContent').style.display = 'none';
+            
+            try {
+                const response = await fetch(`/api/document/${id}`);
+                const data = await response.json();
+                
+                document.getElementById('modalSummary').textContent = data.summary;
+                document.getElementById('modalText').textContent = data.text;
+                
+                const entitiesTbody = document.getElementById('modalEntities');
+                entitiesTbody.innerHTML = '';
+                for (const [key, value] of Object.entries(data.entities)) {
+                    if (value && value !== 'Not Found') {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td style="color: var(--text-secondary); width: 30%;">${key}</td><td>${value}</td>`;
+                        entitiesTbody.appendChild(tr);
+                    }
+                }
+                
+                document.getElementById('modalLoading').style.display = 'none';
+                document.getElementById('modalContent').style.display = 'block';
+            } catch (err) {
+                document.getElementById('modalLoading').innerHTML = '<span style="color:#ef4444;">Failed to load data.</span>';
+            }
+        }
+        
+        function closeDocModal() {
+            document.getElementById('docModal').style.display = 'none';
+        }
+
+        // Chart.js Graph Initialization
+        const ctx = document.getElementById('typeChart').getContext('2d');
+        const isLightMode = document.body.classList.contains('light-mode');
+        const textColor = isLightMode ? '#5a5a62' : '#8c8c93';
+        const gridColor = isLightMode ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+
+        const typeChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ labels|safe }},
+                datasets: [{
+                    label: 'Documents',
+                    data: {{ data|safe }},
+                    backgroundColor: 'rgba(124, 58, 237, 0.8)',
+                    borderColor: '#7c3aed',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: textColor, precision: 0 },
+                        grid: { color: gridColor }
+                    },
+                    x: {
+                        ticks: { color: textColor },
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        function toggleTheme() {
+            const body = document.body;
+            const isLight = body.classList.toggle('light-mode');
+            const themeText = document.getElementById('themeText');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (isLight) {
+                themeText.textContent = "Light";
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'light');
+                
+                // Update Chart Theme
+                typeChart.options.scales.x.ticks.color = '#5a5a62';
+                typeChart.options.scales.y.ticks.color = '#5a5a62';
+                typeChart.options.scales.y.grid.color = 'rgba(0,0,0,0.05)';
+                typeChart.update();
+            } else {
+                themeText.textContent = "Dark";
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'dark');
+                
+                // Update Chart Theme
+                typeChart.options.scales.x.ticks.color = '#8c8c93';
+                typeChart.options.scales.y.ticks.color = '#8c8c93';
+                typeChart.options.scales.y.grid.color = 'rgba(255,255,255,0.05)';
+                typeChart.update();
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            document.getElementById('themeText').textContent = "Light";
+            const icon = document.getElementById('themeIcon');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+    </script>
+</body>
+</html>

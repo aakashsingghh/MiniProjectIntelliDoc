@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - IntelliDoc</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .settings-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .settings-group {
+            margin-bottom: 2rem;
+            background: var(--bg-primary);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .light-mode .settings-group {
+            border-color: rgba(0,0,0,0.1);
+        }
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .light-mode .settings-item {
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+        .settings-info h4 {
+            margin: 0 0 0.25rem 0;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        .settings-info p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body class="animate-fade-in">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <a href="{{ url_for('dashboard') }}" class="sidebar-logo">
+                <i class="fa-solid fa-cube"></i>
+            </a>
+            
+            <a href="{{ url_for('dashboard') }}" class="sidebar-icon" title="Dashboard"><i class="fa-solid fa-house"></i></a>
+            <a href="{{ url_for('documents_page') }}" class="sidebar-icon" title="Documents"><i class="fa-solid fa-file-lines"></i></a>
+            <a href="{{ url_for('upload') }}" class="sidebar-icon" title="Upload Document"><i class="fa-solid fa-cloud-arrow-up"></i></a>
+            <a href="{{ url_for('profile') }}" class="sidebar-icon" title="Profile"><i class="fa-solid fa-user"></i></a>
+            <a href="{{ url_for('settings') }}" class="sidebar-icon active" title="Settings"><i class="fa-solid fa-gear"></i></a>
+            
+            <div class="sidebar-user">
+                <div class="user-avatar" title="{{ session.get('username') }}">{{ session.get('username')[0].upper() if session.get('username') else 'U' }}</div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-nav">
+                <div>
+                    <h1 class="nav-title">Settings</h1>
+                    <p class="nav-subtitle">Manage preferences and account settings.</p>
+                </div>
+                
+                <div class="nav-actions">
+                    <div class="theme-switch-container" onclick="toggleTheme()" style="margin-left: 1rem;">
+                        <div class="theme-switch">
+                            <span class="theme-switch-text" id="themeText">Dark</span>
+                            <div class="theme-switch-thumb" id="themeThumb">
+                                <i class="fa-solid fa-moon theme-switch-icon" id="themeIcon"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <a href="{{ url_for('logout') }}" class="icon-btn" style="border:none; margin-left: 0.5rem;" title="Logout"><i class="fa-solid fa-arrow-right-from-bracket"></i></a>
+                </div>
+            </header>
+
+            <div class="settings-container">
+                <div class="settings-group dash-card" style="padding: 0;">
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Appearance</h4>
+                            <p>Toggle between Dark and Light mode for the application.</p>
+                        </div>
+                        <div>
+                            <button class="btn-secondary" onclick="toggleTheme()"><i class="fa-solid fa-circle-half-stroke"></i> Toggle Theme</button>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Profile Settings</h4>
+                            <p>Update your personal and business information.</p>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('profile') }}" class="btn-secondary" style="text-decoration: none;"><i class="fa-solid fa-user-pen"></i> Edit Profile</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 style="font-size: 1rem; color: var(--text-secondary); margin-bottom: 1rem; margin-top: 2rem;">Danger Zone</h3>
+                
+                <div class="settings-group dash-card" style="padding: 0; border: 1px solid rgba(239, 68, 68, 0.3);">
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4 style="color: #ef4444;">Clear All Documents</h4>
+                            <p>Permanently delete all processed documents and extracted data. This cannot be undone.</p>
+                        </div>
+                        <div>
+                            <form action="{{ url_for('clear_all') }}" method="POST" onsubmit="return confirm('Are you sure you want to clear all documents? This action is irreversible.');" style="margin: 0;">
+                                <button type="submit" class="btn-primary" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);"><i class="fa-solid fa-trash-can"></i> Clear Data</button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4 style="color: #ef4444;">Sign Out</h4>
+                            <p>Securely log out of your IntelliDoc account.</p>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('logout') }}" class="btn-secondary" style="text-decoration: none; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const isLight = body.classList.toggle('light-mode');
+            const themeText = document.getElementById('themeText');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (isLight) {
+                themeText.textContent = "Light";
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'light');
+            } else {
+                themeText.textContent = "Dark";
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            document.getElementById('themeText').textContent = "Light";
+            const icon = document.getElementById('themeIcon');
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+    </script>
+</body>
+</html>

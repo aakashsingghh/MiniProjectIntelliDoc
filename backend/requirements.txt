@@ -1,0 +1,12 @@
+flask
+flask_sqlalchemy
+pytesseract
+opencv-python
+pillow
+pdf2image
+google-generativeai
+python-dotenv
+sumy
+nltk
+reportlab
+spacy
