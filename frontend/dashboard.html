@@ -231,7 +231,17 @@
                 document.getElementById('modalText').textContent = data.extracted_text;
                 const entitiesTbody = document.getElementById('modalEntities');
                 entitiesTbody.innerHTML = '';
-                // Add entity rows if needed
+                
+                // Add structured data rows
+                if (data.structured_data) {
+                    for (const [key, value] of Object.entries(data.structured_data)) {
+                        if (value && value !== 'Not Found') {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `<td style="color: var(--text-secondary); width: 40%; font-weight: 500;">${key}</td><td style="color: var(--text-primary);">${value}</td>`;
+                            entitiesTbody.appendChild(tr);
+                        }
+                    }
+                }
                 document.getElementById('modalLoading').style.display = 'none';
                 document.getElementById('modalContent').style.display = 'block';
             } catch (err) { console.error(err); }
