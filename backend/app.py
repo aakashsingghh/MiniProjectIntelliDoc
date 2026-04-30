@@ -77,16 +77,26 @@ class Document:
 def get_db_connection():
     # Use DATABASE_URL for Render deployment, fallback to local settings
     db_url = os.environ.get('DATABASE_URL')
-    if db_url:
-        return psycopg2.connect(db_url)
+    if not db_url:
+        return psycopg2.connect(
+            dbname=os.environ.get("DB_NAME", "intellidoc"),
+            user=os.environ.get("DB_USER", "postgres"),
+            password=os.environ.get("DB_PASSWORD", "your_password"),
+            host=os.environ.get("DB_HOST", "localhost"),
+            port=os.environ.get("DB_PORT", "5432")
+        )
     
-    return psycopg2.connect(
-        dbname=os.environ.get("DB_NAME", "intellidoc"),
-        user=os.environ.get("DB_USER", "postgres"),
-        password=os.environ.get("DB_PASSWORD", "your_password"),
-        host=os.environ.get("DB_HOST", "localhost"),
-        port=os.environ.get("DB_PORT", "5432")
-    )
+    # Render Internal Link Handling
+    if "dpg-" in db_url and ".render.com" not in db_url:
+        # This is an internal link, usually doesn't need sslmode=require
+        if "sslmode=" not in db_url:
+            pass
+            
+    # Fix for Render's postgres:// vs postgresql://
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+        
+    return psycopg2.connect(db_url)
 
 def save_to_db(data, user_id, extracted_text=None, summary=None):
     try:
