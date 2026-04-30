@@ -10,3 +10,4 @@ sumy
 nltk
 reportlab
 spacy
+gunicorn
