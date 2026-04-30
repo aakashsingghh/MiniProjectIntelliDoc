@@ -71,12 +71,17 @@ class Document:
 # STORAGE FUNCTIONS
 # ------------------------------------------------
 def get_db_connection():
+    # Use DATABASE_URL for Render deployment, fallback to local settings
+    db_url = os.environ.get('DATABASE_URL')
+    if db_url:
+        return psycopg2.connect(db_url)
+    
     return psycopg2.connect(
-        dbname="intellidoc",
-        user="postgres",
-        password="your_password",
-        host="localhost",
-        port="5432"
+        dbname=os.environ.get("DB_NAME", "intellidoc"),
+        user=os.environ.get("DB_USER", "postgres"),
+        password=os.environ.get("DB_PASSWORD", "your_password"),
+        host=os.environ.get("DB_HOST", "localhost"),
+        port=os.environ.get("DB_PORT", "5432")
     )
 
 def save_to_db(data, user_id, extracted_text=None, summary=None):
