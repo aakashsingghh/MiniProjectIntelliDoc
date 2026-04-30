@@ -17,6 +17,7 @@ import tempfile
 import psycopg2
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+from init_db import init_database
 
 # Fallback NLP imports
 import nltk
@@ -38,6 +39,7 @@ except OSError:
     nlp = spacy.load("en_core_web_sm")
 
 load_dotenv()
+init_database()
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
