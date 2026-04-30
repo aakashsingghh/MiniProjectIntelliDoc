@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IntelliDoc - AI Document Platform</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="style.css">
     <style>
         .landing-wrapper {
             min-height: 100vh;
@@ -132,8 +132,8 @@
                         </div>
                     </div>
                 </div>
-                <a href="{{ url_for('login') }}" style="color: var(--text-secondary); text-decoration: none; font-weight: 500;">Login</a>
-                <a href="{{ url_for('register') }}" class="btn-primary">Get Started</a>
+                <a href="login.html" style="color: var(--text-secondary); text-decoration: none; font-weight: 500;">Login</a>
+                <a href="register.html" class="btn-primary">Get Started</a>
             </div>
         </nav>
 
@@ -149,10 +149,10 @@
             <p class="hero-subtitle">Transform unstructured documents into structured insights automatically with industry-leading OCR and NLP models.</p>
             
             <div style="display: flex; gap: 1.5rem;">
-                <a href="{{ url_for('login') }}" class="btn-primary" style="padding: 1rem 2.5rem; font-size: 1.1rem; box-shadow: 0 10px 25px var(--accent-purple-glow);">
+                <a href="login.html" class="btn-primary" style="padding: 1rem 2.5rem; font-size: 1.1rem; box-shadow: 0 10px 25px var(--accent-purple-glow);">
                     Get Started Free <i class="fa-solid fa-arrow-right"></i>
                 </a>
-                <a href="{{ url_for('demo') }}" class="try-demo-btn" style="padding: 1rem 2.5rem; font-size: 1.1rem; text-decoration: none;">
+                <a href="demo.html" class="try-demo-btn" style="padding: 1rem 2.5rem; font-size: 1.1rem; text-decoration: none;">
                     Try Demo
                 </a>
             </div>

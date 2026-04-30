@@ -76,6 +76,9 @@ def get_db_connection():
     # Use DATABASE_URL for Render deployment, fallback to local settings
     db_url = os.environ.get('DATABASE_URL')
     if db_url:
+        # Render's DATABASE_URL uses 'postgres://' but psycopg2/SQLAlchemy may need 'postgresql://'
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql://", 1)
         return psycopg2.connect(db_url)
     
     return psycopg2.connect(
@@ -350,6 +353,10 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+@app.route('/health')
+def health_check():
+    return {"status": "healthy", "database": "connected" if os.environ.get('DATABASE_URL') else "local"}, 200
 
 @app.route('/')
 def index():
