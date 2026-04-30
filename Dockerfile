@@ -8,11 +8,17 @@ RUN apt-get update && apt-get install -y \
     poppler-utils \
     libgl1-mesa-glx \
     libglib2.0-0 \
+    gcc \
+    python3-dev \
+    build-essential \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
 WORKDIR /app
+
+# Upgrade pip for better package resolution
+RUN pip install --no-cache-dir --upgrade pip setuptools
 
 # Copy the requirements file into the container
 COPY requirements.txt .
@@ -31,6 +37,7 @@ RUN mkdir -p uploads
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
+ENV PORT=10000
 
 # Expose the port the app runs on
 EXPOSE 10000
