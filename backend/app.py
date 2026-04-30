@@ -51,10 +51,13 @@ documents = []
 doc_id_counter = 1
 
 class Document:
-    def __init__(self, filename, document_type, extracted_text, structured_data, priority, summary, user_id=None):
+    def __init__(self, filename, document_type, extracted_text, structured_data, priority, summary, user_id=None, doc_id=None):
         global doc_id_counter
-        self.id = doc_id_counter
-        doc_id_counter += 1
+        if doc_id:
+            self.id = doc_id
+        else:
+            self.id = doc_id_counter
+            doc_id_counter += 1
         self.filename = filename
         self.document_type = document_type
         self.extracted_text = extracted_text
@@ -68,15 +71,20 @@ class Document:
 # STORAGE FUNCTIONS
 # ------------------------------------------------
 def get_db_connection():
+    # Use DATABASE_URL for Render deployment, fallback to local settings
+    db_url = os.environ.get('DATABASE_URL')
+    if db_url:
+        return psycopg2.connect(db_url)
+    
     return psycopg2.connect(
-        dbname="intellidoc",
-        user="postgres",
-        password="your_password",
-        host="localhost",
-        port="5432"
+        dbname=os.environ.get("DB_NAME", "intellidoc"),
+        user=os.environ.get("DB_USER", "postgres"),
+        password=os.environ.get("DB_PASSWORD", "your_password"),
+        host=os.environ.get("DB_HOST", "localhost"),
+        port=os.environ.get("DB_PORT", "5432")
     )
 
-def save_to_db(data, user_id):
+def save_to_db(data, user_id, extracted_text=None, summary=None):
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -90,16 +98,20 @@ def save_to_db(data, user_id):
 
         cur.execute(
             """
-            INSERT INTO IDPtable (name, dob, email, phone, organization, document_type, user_id, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            INSERT INTO IDPtable (name, dob, email, phone, organization, document_type, user_id, extracted_text, summary, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+            RETURNING id
             """,
-            (name, dob, email, phone, organization, doc_type, user_id)
+            (name, dob, email, phone, organization, doc_type, user_id, extracted_text, summary)
         )
+        new_id = cur.fetchone()[0]
         conn.commit()
         cur.close()
         conn.close()
+        return new_id
     except Exception as e:
         print(f"Database Error: {e}")
+        return None
 
 def save_to_json(data, user_id, username):
     try:
@@ -621,7 +633,8 @@ def upload():
                 # Save to Database and JSON
                 structured_data = data_dict.copy()
                 structured_data["Document Type"] = doc_type
-                save_to_db(structured_data, user_id)
+                
+                db_id = save_to_db(structured_data, user_id, extracted_text=extracted_text, summary=summary)
                 save_to_json(structured_data, user_id, username)
                 
                 priority = "High" if doc_type in ["Invoice", "PAN Card", "Aadhaar Card"] else "Medium"
@@ -633,7 +646,8 @@ def upload():
                     structured_data=extracted_data,
                     priority=priority,
                     summary=summary,
-                    user_id=user_id
+                    user_id=user_id,
+                    doc_id=db_id
                 )
                 documents.append(new_doc)
                 processed_ids.append(new_doc.id)
@@ -648,26 +662,26 @@ def upload():
 def result(doc_id):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, name, document_type, created_at, dob, email, phone, organization FROM IDPtable WHERE id = %s AND user_id = %s", (doc_id, session['user_id']))
+    cur.execute("SELECT id, name, document_type, created_at, dob, email, phone, organization, extracted_text, summary FROM IDPtable WHERE id = %s AND user_id = %s", (doc_id, session['user_id']))
     doc_row = cur.fetchone()
     cur.close()
     conn.close()
     
     if not doc_row:
-        return "Document not found or access denied", 404
+        flash("Document not found or access denied.")
+        return redirect(url_for('dashboard'))
         
-    doc_id_db, name, doc_type, created_at, dob, email, phone, org = doc_row
+    doc_id_db, name, doc_type, created_at, dob, email, phone, org, db_text, db_summary = doc_row
     
-    # Try to find corresponding in-memory doc for summary/text
+    # Try to find corresponding in-memory doc for summary/text (as fallback)
     in_memory_doc = None
     for d in documents:
-        if getattr(d, 'user_id', None) == session['user_id'] and d.document_type == doc_type:
-            if name and getattr(d, 'structured_data', None) and name in d.structured_data:
-                in_memory_doc = d
-                break
+        if d.id == doc_id:
+            in_memory_doc = d
+            break
                 
-    summary = in_memory_doc.summary if in_memory_doc else f"This is a {doc_type} record. AI Summary is securely stored in logs."
-    text = in_memory_doc.extracted_text if in_memory_doc else "Raw text is archived."
+    summary = db_summary if db_summary else (in_memory_doc.summary if in_memory_doc else f"This is a {doc_type} record. AI Summary is securely stored in logs.")
+    text = db_text if db_text else (in_memory_doc.extracted_text if in_memory_doc else "Raw text is archived.")
     
     class DBObject:
         pass
@@ -697,7 +711,7 @@ def result(doc_id):
 def api_document(doc_id):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT name, document_type, dob, email, phone, organization FROM IDPtable WHERE id = %s AND user_id = %s", (doc_id, session['user_id']))
+    cur.execute("SELECT name, document_type, dob, email, phone, organization, extracted_text, summary FROM IDPtable WHERE id = %s AND user_id = %s", (doc_id, session['user_id']))
     doc_row = cur.fetchone()
     cur.close()
     conn.close()
@@ -705,20 +719,17 @@ def api_document(doc_id):
     if not doc_row:
         return {"error": "Not found"}, 404
         
-    name, doc_type, dob, email, phone, org = doc_row
+    name, doc_type, dob, email, phone, org, db_text, db_summary = doc_row
     
-    # Try to find corresponding in-memory doc for summary/text
-    # We match robustly to avoid string type errors
+    # Try to find corresponding in-memory doc for summary/text (fallback)
     in_memory_doc = None
     for d in documents:
-        if getattr(d, 'user_id', None) == session['user_id'] and d.document_type == doc_type:
-            # simple loose match
-            if name and getattr(d, 'structured_data', None) and name in d.structured_data:
-                in_memory_doc = d
-                break
+        if d.id == doc_id:
+            in_memory_doc = d
+            break
     
-    summary = in_memory_doc.summary if in_memory_doc else f"This is a {doc_type} record. AI Summary is securely stored in logs."
-    text = in_memory_doc.extracted_text if in_memory_doc else "Raw text is archived."
+    summary = db_summary if db_summary else (in_memory_doc.summary if in_memory_doc else f"This is a {doc_type} record. AI Summary is securely stored in logs.")
+    text = db_text if db_text else (in_memory_doc.extracted_text if in_memory_doc else "Raw text is archived.")
     
     entities = {
         "Name": name,

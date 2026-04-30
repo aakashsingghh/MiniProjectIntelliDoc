@@ -10,3 +10,5 @@ sumy
 nltk
 reportlab
 spacy
+gunicorn
+psycopg2-binary
