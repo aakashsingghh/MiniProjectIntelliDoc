@@ -12,6 +12,7 @@ from pdf2image import convert_from_path
 from flask import Flask, render_template, request, redirect, url_for, send_file, flash, abort, session
 from datetime import datetime
 from dotenv import load_dotenv
+from flask_cors import CORS
 import tempfile
 import psycopg2
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -39,6 +40,7 @@ except OSError:
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app, supports_credentials=True)
 app.config['SECRET_KEY'] = 'intellidoc-secret-super-key'
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
 

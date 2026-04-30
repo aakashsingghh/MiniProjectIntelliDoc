@@ -13,3 +13,4 @@ nltk
 reportlab
 gunicorn
 google-generativeai
+flask-cors
