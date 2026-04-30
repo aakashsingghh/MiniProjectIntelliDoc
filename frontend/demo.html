@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload - IntelliDoc</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="style.css">
     <style>
         .upload-area {
             border: 2px dashed var(--border-color);
@@ -81,28 +81,20 @@
                     <p class="nav-subtitle">Upload a file to test the AI extraction.</p>
                 </div>
                 <div class="nav-actions">
-                    <span style="background: rgba(124, 58, 237, 0.1); color: var(--accent-purple); padding: 0.5rem 1rem; border-radius: 999px; font-weight: 600;">
-                        Demo uses left: {{ remaining }}
+                    <span id="demo-remaining-box" style="background: rgba(124, 58, 237, 0.1); color: var(--accent-purple); padding: 0.5rem 1rem; border-radius: 999px; font-weight: 600;">
+                        Demo uses left: <span id="remaining-count">...</span>
                     </span>
-                    <a href="{{ url_for('index') }}" class="btn-secondary" style="border:none; padding: 0.5rem;"><i class="fa-solid fa-arrow-left"></i> Back</a>
+                    <a href="index.html" class="btn-secondary" style="border:none; padding: 0.5rem;"><i class="fa-solid fa-arrow-left"></i> Back</a>
                 </div>
             </header>
 
 
 
             <div style="max-width: 800px; margin: 0 auto;">
-                {% with messages = get_flashed_messages() %}
-                  {% if messages %}
-                    {% for message in messages %}
-                      <div style="background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.3); color: #f87171; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
-                        <div><i class="fa-solid fa-circle-exclamation me-2" style="margin-right: 10px;"></i> {{ message }}</div>
-                      </div>
-                    {% endfor %}
-                  {% endif %}
-                {% endwith %}
+                <div id="flash-messages"></div>
 
                 <div class="dash-card">
-                    <form id="uploadForm" action="{{ url_for('demo') }}" method="POST" enctype="multipart/form-data">
+                    <form id="uploadForm">
                         <div class="upload-area" id="uploadBox" onclick="document.getElementById('fileInput').click()">
                             <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
                             <h3 style="margin-top: 0;">Drag & Drop files here</h3>
@@ -124,6 +116,49 @@
     </div>
 
     <script>
+        const API_BASE_URL = "https://miniprojectintellidoc-1.onrender.com";
+
+        // Fetch remaining count on load
+        async function fetchRemaining() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/demo_status`, { credentials: 'include' });
+                const data = await res.json();
+                document.getElementById('remaining-count').textContent = data.remaining;
+            } catch(e) {
+                document.getElementById('remaining-count').textContent = "5";
+            }
+        }
+        fetchRemaining();
+
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            document.getElementById('loader-overlay').style.display = 'flex';
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/demo`, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+                
+                if (response.redirected) {
+                    // If Flask redirects to demo_result, we need to handle it
+                    // For now, let's just go to a static result page or the redirected URL
+                    window.location.href = response.url;
+                } else if (response.ok) {
+                    const result = await response.text();
+                    document.open();
+                    document.write(result);
+                    document.close();
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                document.getElementById('loader-overlay').style.display = 'none';
+            }
+        });
+
         const fileInput = document.getElementById('fileInput');
         const uploadBox = document.getElementById('uploadBox');
         const submitBtn = document.getElementById('submitBtn');

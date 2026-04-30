@@ -417,6 +417,12 @@ def demo():
         
     return render_template('demo.html', remaining=5 - session["demo_count"])
 
+@app.route('/demo_status')
+def demo_status():
+    if "demo_count" not in session:
+        session["demo_count"] = 0
+    return {"remaining": 5 - session["demo_count"]}
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -496,13 +502,29 @@ def dashboard():
     cur.close()
     conn.close()
         
-    return render_template('dashboard.html', 
-                           user_docs=user_docs, 
-                           total_docs=total_docs,
-                           labels=labels,
-                           data=data,
-                           most_common_type=most_common_type,
-                           latest_doc=latest_doc)
+    return render_template('dashboard.html', user_docs=user_docs, total_docs=total_docs, labels=labels, data=data, most_common_type=most_common_type, latest_doc=latest_doc)
+
+@app.route('/api/dashboard')
+@login_required
+def api_dashboard():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT id, name, document_type, created_at FROM IDPtable WHERE user_id = %s ORDER BY created_at DESC LIMIT 8", (session['user_id'],))
+    user_docs = cur.fetchall()
+    cur.execute("SELECT COUNT(*) FROM IDPtable WHERE user_id = %s", (session['user_id'],))
+    total_docs = cur.fetchone()[0]
+    cur.execute("SELECT document_type, COUNT(*) FROM IDPtable WHERE user_id = %s GROUP BY document_type", (session['user_id'],))
+    type_counts = cur.fetchall()
+    labels = [row[0] if row[0] else 'Other' for row in type_counts]
+    data = [row[1] for row in type_counts]
+    most_common_type = labels[data.index(max(data))] if data else "N/A"
+    cur.execute("SELECT name FROM IDPtable WHERE user_id = %s ORDER BY created_at DESC LIMIT 1", (session['user_id'],))
+    latest_doc_row = cur.fetchone()
+    latest_doc = latest_doc_row[0] if latest_doc_row else "None"
+    formatted_docs = [{"id": d[0], "name": d[1], "type": d[2], "date": d[3].strftime('%Y-%m-%d %H:%M') if d[3] else "Unknown"} for d in user_docs]
+    cur.close()
+    conn.close()
+    return {"total_docs": total_docs, "most_common_type": most_common_type, "latest_doc": latest_doc, "docs": formatted_docs, "chart_labels": labels, "chart_data": data, "username": session.get('username', 'User')}
 
 @app.route('/documents')
 @login_required
