@@ -83,7 +83,8 @@ def get_db_connection():
             user=os.environ.get("DB_USER", "postgres"),
             password=os.environ.get("DB_PASSWORD", "your_password"),
             host=os.environ.get("DB_HOST", "localhost"),
-            port=os.environ.get("DB_PORT", "5432")
+            port=os.environ.get("DB_PORT", "5432"),
+            connect_timeout=5
         )
     
     # Render Internal Link Handling
@@ -96,7 +97,7 @@ def get_db_connection():
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
         
-    return psycopg2.connect(db_url)
+    return psycopg2.connect(db_url, connect_timeout=5)
 
 def save_to_db(data, user_id, extracted_text=None, summary=None):
     try:

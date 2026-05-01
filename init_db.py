@@ -35,14 +35,21 @@ def init_database():
     # Connect to the database to create tables
     try:
         if db_url:
-            conn = psycopg2.connect(db_url)
+            print(f"🔍 Attempting to connect to external database (Timeout: 5s)...")
+            # Fix for Render's postgres:// vs postgresql://
+            if db_url.startswith("postgres://"):
+                db_url = db_url.replace("postgres://", "postgresql://", 1)
+            conn = psycopg2.connect(db_url, connect_timeout=5)
+            print(f"✅ Connected to database successfully!")
         else:
+            print(f"🏠 No DATABASE_URL found. Connecting to local 'intellidoc'...")
             conn = psycopg2.connect(
                 dbname="intellidoc", 
                 user=os.environ.get("DB_USER", "postgres"), 
                 password=os.environ.get("DB_PASSWORD", "your_password"), 
                 host=os.environ.get("DB_HOST", "localhost"), 
-                port=os.environ.get("DB_PORT", "5432")
+                port=os.environ.get("DB_PORT", "5432"),
+                connect_timeout=5
             )
         
         cur = conn.cursor()
