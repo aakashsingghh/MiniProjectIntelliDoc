@@ -74,30 +74,38 @@ class Document:
 # ------------------------------------------------
 # STORAGE FUNCTIONS
 # ------------------------------------------------
+import sqlite3
+
 def get_db_connection():
-    # Use DATABASE_URL for Render deployment, fallback to local settings
     db_url = os.environ.get('DATABASE_URL')
-    if not db_url:
-        return psycopg2.connect(
-            dbname=os.environ.get("DB_NAME", "intellidoc"),
-            user=os.environ.get("DB_USER", "postgres"),
-            password=os.environ.get("DB_PASSWORD", "your_password"),
-            host=os.environ.get("DB_HOST", "localhost"),
-            port=os.environ.get("DB_PORT", "5432"),
-            connect_timeout=5
-        )
     
-    # Render Internal Link Handling
-    if "dpg-" in db_url and ".render.com" not in db_url:
-        # This is an internal link, usually doesn't need sslmode=require
-        if "sslmode=" not in db_url:
-            pass
-            
-    # Fix for Render's postgres:// vs postgresql://
-    if db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql://", 1)
-        
-    return psycopg2.connect(db_url, connect_timeout=5)
+    # Try PostgreSQL first (Render or Local Postgres)
+    if db_url:
+        try:
+            if db_url.startswith("postgres://"):
+                db_url = db_url.replace("postgres://", "postgresql://", 1)
+            # Short timeout for local check
+            return psycopg2.connect(db_url, connect_timeout=3)
+        except Exception as e:
+            print(f"📡 [Backend] Render DB unreachable ({e}). Falling back to local SQLite...")
+    
+    # Fallback to Local SQLite for zero-config local development
+    conn = sqlite3.connect("intellidoc.db", check_same_thread=False)
+    return conn
+
+def execute_query(conn, cur, sql, params=()):
+    is_sqlite = isinstance(conn, sqlite3.Connection)
+    if is_sqlite:
+        sql = sql.replace("%s", "?").replace("ILIKE", "LIKE").replace("RETURNING id", "")
+        if "INSERT" in sql.upper() and "RETURNING" in sql.upper():
+            sql = sql.split("RETURNING")[0]
+        cur.execute(sql, params)
+        return cur.lastrowid if "INSERT" in sql.upper() else None
+    else:
+        cur.execute(sql, params)
+        if "RETURNING" in sql.upper():
+            return cur.fetchone()[0]
+        return None
 
 def save_to_db(data, user_id, extracted_text=None, summary=None):
     try:
@@ -111,19 +119,17 @@ def save_to_db(data, user_id, extracted_text=None, summary=None):
         organization = data.get("Organization") if data.get("Organization") and data.get("Organization") != "Not Found" else None
         doc_type = data.get("Document Type") if data.get("Document Type") else None
 
-        # Convert full dictionary to JSON for storage
         import json
         structured_data_json = json.dumps(data)
 
-        cur.execute(
-            """
+        sql = """
             INSERT INTO IDPtable (name, dob, email, phone, organization, document_type, user_id, extracted_text, summary, structured_data, created_at)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
             RETURNING id
-            """,
-            (name, dob, email, phone, organization, doc_type, user_id, extracted_text, summary, structured_data_json)
-        )
-        new_id = cur.fetchone()[0]
+        """
+        params = (name, dob, email, phone, organization, doc_type, user_id, extracted_text, summary, structured_data_json)
+        new_id = execute_query(conn, cur, sql, params)
+        
         conn.commit()
         cur.close()
         conn.close()
@@ -441,16 +447,17 @@ def register():
             conn = get_db_connection()
             cur = conn.cursor()
             hashed_pw = generate_password_hash(password)
-            cur.execute("INSERT INTO users (username, password_hash) VALUES (%s, %s)", (username, hashed_pw))
+            execute_query(conn, cur, "INSERT INTO users (username, password_hash) VALUES (%s, %s)", (username, hashed_pw))
             conn.commit()
             cur.close()
             conn.close()
             flash("Registration successful. Please login.")
             return redirect(url_for('login'))
-        except psycopg2.errors.UniqueViolation:
-            flash("Username already exists.")
         except Exception as e:
-            flash("An error occurred.")
+            if "UNIQUE" in str(e) or (hasattr(e, 'pgcode') and e.pgcode == '23505'):
+                flash("Username already exists.")
+            else:
+                flash(f"An error occurred: {e}")
             
     return render_template('register.html')
 
@@ -462,7 +469,7 @@ def login():
         
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("SELECT id, password_hash FROM users WHERE username = %s", (username,))
+        execute_query(conn, cur, "SELECT id, password_hash FROM users WHERE username = %s", (username,))
         user = cur.fetchone()
         cur.close()
         conn.close()
@@ -517,16 +524,16 @@ def dashboard():
 def api_dashboard():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, name, document_type, created_at FROM IDPtable WHERE user_id = %s ORDER BY created_at DESC LIMIT 8", (session['user_id'],))
+    execute_query(conn, cur, "SELECT id, name, document_type, created_at FROM IDPtable WHERE user_id = %s ORDER BY created_at DESC LIMIT 8", (session['user_id'],))
     user_docs = cur.fetchall()
-    cur.execute("SELECT COUNT(*) FROM IDPtable WHERE user_id = %s", (session['user_id'],))
+    execute_query(conn, cur, "SELECT COUNT(*) FROM IDPtable WHERE user_id = %s", (session['user_id'],))
     total_docs = cur.fetchone()[0]
-    cur.execute("SELECT document_type, COUNT(*) FROM IDPtable WHERE user_id = %s GROUP BY document_type", (session['user_id'],))
+    execute_query(conn, cur, "SELECT document_type, COUNT(*) FROM IDPtable WHERE user_id = %s GROUP BY document_type", (session['user_id'],))
     type_counts = cur.fetchall()
     labels = [row[0] if row[0] else 'Other' for row in type_counts]
     data = [row[1] for row in type_counts]
     most_common_type = labels[data.index(max(data))] if data else "N/A"
-    cur.execute("SELECT name FROM IDPtable WHERE user_id = %s ORDER BY created_at DESC LIMIT 1", (session['user_id'],))
+    execute_query(conn, cur, "SELECT name FROM IDPtable WHERE user_id = %s ORDER BY created_at DESC LIMIT 1", (session['user_id'],))
     latest_doc_row = cur.fetchone()
     latest_doc = latest_doc_row[0] if latest_doc_row else "None"
     formatted_docs = [{"id": d[0], "name": d[1], "type": d[2], "date": d[3].strftime('%Y-%m-%d %H:%M') if d[3] else "Unknown"} for d in user_docs]
@@ -556,7 +563,7 @@ def documents_page():
         
     base_query += " ORDER BY created_at DESC"
     
-    cur.execute(base_query, tuple(params))
+    execute_query(conn, cur, base_query, tuple(params))
     user_docs = cur.fetchall()
     
     cur.close()
@@ -573,7 +580,7 @@ def search_suggestions():
         
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT name, document_type FROM IDPtable WHERE user_id = %s AND name ILIKE %s LIMIT 5", (session['user_id'], f"%{keyword}%"))
+    execute_query(conn, cur, "SELECT name, document_type FROM IDPtable WHERE user_id = %s AND name ILIKE %s LIMIT 5", (session['user_id'], f"%{keyword}%"))
     results = cur.fetchall()
     cur.close()
     conn.close()
@@ -595,7 +602,7 @@ def profile():
         business_name = request.form.get('business_name')
         company_type = request.form.get('company_type')
         
-        cur.execute("""
+        execute_query(conn, cur, """
             UPDATE users 
             SET full_name = %s, email = %s, phone = %s, address = %s, business_name = %s, company_type = %s
             WHERE id = %s
@@ -603,7 +610,7 @@ def profile():
         conn.commit()
         flash("Profile updated successfully!")
         
-    cur.execute("SELECT username, full_name, email, phone, address, business_name, company_type FROM users WHERE id = %s", (session['user_id'],))
+    execute_query(conn, cur, "SELECT username, full_name, email, phone, address, business_name, company_type FROM users WHERE id = %s", (session['user_id'],))
     user_data = cur.fetchone()
     cur.close()
     conn.close()
@@ -620,7 +627,7 @@ def settings():
 def delete_document(doc_id):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("DELETE FROM IDPtable WHERE id = %s AND user_id = %s", (doc_id, session['user_id']))
+    execute_query(conn, cur, "DELETE FROM IDPtable WHERE id = %s AND user_id = %s", (doc_id, session['user_id']))
     conn.commit()
     cur.close()
     conn.close()
@@ -632,7 +639,7 @@ def delete_document(doc_id):
 def clear_all():
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("DELETE FROM IDPtable WHERE user_id = %s", (session['user_id'],))
+    execute_query(conn, cur, "DELETE FROM IDPtable WHERE user_id = %s", (session['user_id'],))
     conn.commit()
     cur.close()
     conn.close()
@@ -703,7 +710,7 @@ def upload():
 def result(doc_id):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id, name, document_type, created_at, dob, email, phone, organization, extracted_text, summary FROM IDPtable WHERE id = %s AND user_id = %s", (doc_id, session['user_id']))
+    execute_query(conn, cur, "SELECT id, name, document_type, created_at, dob, email, phone, organization, extracted_text, summary FROM IDPtable WHERE id = %s AND user_id = %s", (doc_id, session['user_id']))
     doc_row = cur.fetchone()
     cur.close()
     conn.close()
@@ -752,7 +759,7 @@ def result(doc_id):
 def api_document(doc_id):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT name, document_type, dob, email, phone, organization, extracted_text, summary, structured_data FROM IDPtable WHERE id = %s AND user_id = %s", (doc_id, session['user_id']))
+    execute_query(conn, cur, "SELECT name, document_type, dob, email, phone, organization, extracted_text, summary, structured_data FROM IDPtable WHERE id = %s AND user_id = %s", (doc_id, session['user_id']))
     doc_row = cur.fetchone()
     cur.close()
     conn.close()
@@ -806,7 +813,7 @@ def search():
         
     base_query += " ORDER BY created_at DESC"
     
-    cur.execute(base_query, tuple(params))
+    execute_query(conn, cur, base_query, tuple(params))
     db_docs = cur.fetchall()
     cur.close()
     conn.close()
