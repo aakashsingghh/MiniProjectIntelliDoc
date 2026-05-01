@@ -785,12 +785,6 @@ def api_document(doc_id):
             "Organization": org
         }
     }
-    
-    return {
-        "summary": summary,
-        "text": text,
-        "entities": entities
-    }
 
 @app.route('/search')
 @login_required
