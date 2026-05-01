@@ -537,7 +537,16 @@ def api_dashboard():
     execute_query(conn, cur, "SELECT name FROM IDPtable WHERE user_id = %s ORDER BY created_at DESC LIMIT 1", (session['user_id'],))
     latest_doc_row = cur.fetchone()
     latest_doc = latest_doc_row[0] if latest_doc_row else "None"
-    formatted_docs = [{"id": d[0], "name": d[1], "type": d[2], "date": d[3].strftime('%Y-%m-%d %H:%M') if d[3] else "Unknown"} for d in user_docs]
+    def format_date(d):
+        if not d: return "Unknown"
+        if isinstance(d, str):
+            try:
+                d = datetime.strptime(d.split('.')[0], '%Y-%m-%d %H:%M:%S')
+            except:
+                return d
+        return d.strftime('%Y-%m-%d %H:%M')
+
+    formatted_docs = [{"id": d[0], "name": d[1], "type": d[2], "date": format_date(d[3])} for d in user_docs]
     cur.close()
     conn.close()
     return {"total_docs": total_docs, "most_common_type": most_common_type, "latest_doc": latest_doc, "docs": formatted_docs, "chart_labels": labels, "chart_data": data, "username": session.get('username', 'User')}
@@ -740,6 +749,14 @@ def result(doc_id):
     doc.filename = name if name else "Uploaded Document"
     doc.document_type = doc_type
     doc.priority = "High" if doc_type in ["Invoice", "PAN Card", "Aadhaar Card"] else "Medium"
+    # Handle SQLite returning dates as strings
+    if isinstance(created_at, str):
+        try:
+            # Common SQLite format: 2026-05-01 04:00:00
+            created_at = datetime.strptime(created_at.split('.')[0], '%Y-%m-%d %H:%M:%S')
+        except:
+            created_at = datetime.now()
+
     doc.created_at = created_at
     doc.summary = summary
     doc.extracted_text = text

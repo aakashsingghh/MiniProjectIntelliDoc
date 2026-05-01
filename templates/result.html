@@ -69,7 +69,13 @@
                             </div>
                             <div>
                                 <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Processed On</div>
-                                <div style="font-size: 0.95rem;">{{ doc.created_at.strftime('%Y-%m-%d %I:%M %p') }}</div>
+                                <div style="font-size: 0.95rem;">
+                                {% if doc.created_at is string %}
+                                    {{ doc.created_at }}
+                                {% else %}
+                                    {{ doc.created_at.strftime('%Y-%m-%d %I:%M %p') }}
+                                {% endif %}
+                            </div>
                             </div>
                         </div>
                     </div>
